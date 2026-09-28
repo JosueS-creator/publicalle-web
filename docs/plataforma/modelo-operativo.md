@@ -9,12 +9,12 @@ Fecha: 28/09/2026 · Estado: base aprobada para construir. **Precios: fuera de a
 | Web pública | **Brief de campaña**: recopila la necesidad del cliente (objetivo, territorio, servicios, fechas, contacto). Sin precios. | Estimación automática (Pricing Engine) |
 | Base de datos | Esquema completo con reglas de acceso (RLS) | — |
 | Admin | Solicitudes, clientes, campañas, jornadas, unidades, usuarios, validación y evidencias (`/admin`) | Reportes, precios |
-| App del operador | Diseño del modelo de evidencia (este documento) | App nativa (Expo) |
+| App del operador | Web en el celular (`/operador`): registros con ubicación, GPS con pantalla encendida, fotos, incidencias | App nativa (Expo) con GPS en segundo plano |
 | Portal del cliente | Campañas, jornadas validadas, zonas y km en zonas, evidencias validadas (`/portal`) | Reportes descargables, mapa del recorrido |
 
 Orden de construcción: **modelo → base de datos → brief → admin + portal → app del operador → estimación de precios.**
 
-Mientras no exista la app del operador, el admin marca el estado de cada jornada y sube las evidencias (p. ej. fotos recibidas por WhatsApp).
+El admin también puede marcar el estado de una jornada y subir evidencias (p. ej. fotos recibidas por WhatsApp) si el operador no pudo registrarlas.
 
 ## 2. Roles
 
@@ -52,9 +52,10 @@ El GPS continuo solo tiene sentido en MOVE. Cada línea tiene su propio registro
 |---|---|---|
 | Hora de inicio, pausas, fin | ✅ | ❌ |
 | Tiempo efectivo / detenido | ✅ | ❌ |
-| Recorrido GPS completo | ✅ | ❌ (solo mapa del recorrido validado dentro de zonas) |
+| Recorrido GPS completo | ✅ | ❌ — solo el recorrido **dentro de sus zonas** (filtrado en el servidor) |
+| Avance durante la jornada | ✅ en vivo | ✅ con **15 min de retraso** (hora del servidor), solo dentro de zonas |
 | Km totales | ✅ | ❌ |
-| Km dentro de zonas contratadas | ✅ | ✅ |
+| Km dentro de zonas contratadas | ✅ (calculado con GPS; el admin lo confirma al validar) | ✅ |
 | Zonas cubiertas | ✅ | ✅ |
 | Ejecuciones completadas | ✅ | ✅ |
 | Evidencias | ✅ todas | ✅ solo validadas |

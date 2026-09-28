@@ -6,6 +6,7 @@ import { WhatsAppIcon } from "@/components/contact/WhatsAppButton";
 import { BRIEF_POR_HORAS, briefBudgets, briefCities, briefDayMoments, briefObjectives, briefSchedules, briefServices } from "@/data/brief";
 import { BRIEF_STEPS, addHours, briefSummary, emptyBrief, submitBrief, validateStep, type BriefData, type BriefErrors, type BriefResult } from "@/lib/brief";
 import { cn } from "@/lib/cn";
+import { MapaBrief } from "./MapaBrief";
 
 const inputCls =
   "w-full rounded-xl bg-white/[0.06] px-4 py-3.5 text-brand-white ring-1 ring-inset ring-white/20 placeholder:text-brand-white/55 transition-[box-shadow,background-color] hover:ring-white/35 focus:bg-white/[0.08] focus:outline-none focus:ring-2 focus:ring-brand-green disabled:opacity-50 aria-[invalid=true]:ring-red-400/70";
@@ -259,6 +260,21 @@ export function CampaignBrief() {
                   </Label>
                   <textarea {...a11y("zonas")} rows={3} maxLength={1000} className={cn(inputCls, "resize-y")} value={data.zonas} onChange={(e) => set("zonas", e.target.value)} placeholder="Ej.: Col. Kennedy, alrededores de mi tienda en Blvd. Morazán…" />
                 </div>
+                <MapaBrief
+                  ubicacion={data.ubicacion}
+                  radioKm={data.radioKm}
+                  zonas={data.zonasElegidas}
+                  referencia={data.ubicacionRef}
+                  onChange={(v) =>
+                    setData((d) => ({
+                      ...d,
+                      ...(v.ubicacion !== undefined ? { ubicacion: v.ubicacion } : {}),
+                      ...(v.radioKm !== undefined ? { radioKm: v.radioKm } : {}),
+                      ...(v.zonas !== undefined ? { zonasElegidas: v.zonas } : {}),
+                      ...(v.referencia !== undefined ? { ubicacionRef: v.referencia } : {}),
+                    }))
+                  }
+                />
               </>
             )}
 

@@ -6,4 +6,5 @@ rm -rf /tmp/sbt; cp -r "$(dirname "$0")/.." /tmp/sbt; chmod -R a+r /tmp/sbt; cd 
 su postgres -c "dropdb --if-exists -f pctest && createdb pctest && psql -X -q -d pctest -c 'alter database pctest set search_path = public, extensions'"
 files="-f stubs.sql"
 for m in ../migrations/*.sql; do files="$files -f $m"; [ "$(basename $m)" = "20260928000001_plataforma_base.sql" ] && files="$files -f grants.sql"; done
+files="$files -f grants.sql"  # también para tablas creadas en migraciones posteriores
 su postgres -c "psql -X -q -v ON_ERROR_STOP=1 -d pctest $files -f seed.sql"

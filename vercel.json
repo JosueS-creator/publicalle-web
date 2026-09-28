@@ -14,7 +14,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(admin|portal|entrar)(.*)",
+      "source": "/(admin|portal|operador|entrar)(.*)",
       "destination": "/index.html"
     }
   ]

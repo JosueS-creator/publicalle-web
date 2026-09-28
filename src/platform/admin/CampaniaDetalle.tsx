@@ -26,7 +26,7 @@ function rangoDias(desde: string, hasta: string) {
 export default function CampaniaDetalle() {
   const { id = "" } = useParams();
   const { data, error, loading, reload } = useAsync(async () => {
-    const [c, serv, jor, unidades, operadores] = await Promise.all([
+    const [c, serv, jor, unidades, operadores, zonasLib] = await Promise.all([
       sb.from("campanias").select("*, empresas(id, nombre)").eq("id", id).single(),
       sb.from("campania_servicios").select("*").eq("campania_id", id).order("linea"),
       sb
@@ -37,8 +37,9 @@ export default function CampaniaDetalle() {
         .order("hora_inicio_prog"),
       sb.from("unidades").select("id, nombre, tipo").eq("activa", true).order("nombre"),
       sb.from("perfiles").select("id, nombre").eq("rol", "operador").eq("activo", true).order("nombre"),
+      sb.from("zonas").select("nombre"),
     ]);
-    return { c: must(c), serv: must(serv), jor: must(jor), unidades: must(unidades), operadores: must(operadores) };
+    return { c: must(c), serv: must(serv), jor: must(jor), unidades: must(unidades), operadores: must(operadores), conMapa: new Set(must(zonasLib).map((z) => z.nombre)) };
   }, [id]);
 
   const [f, setF] = useState({ nombre: "", estado: "borrador" as Enum<"estado_campania">, objetivo: "", ciudades: "", zonas: "", fecha_inicio: "", fecha_fin: "" });
@@ -99,6 +100,15 @@ export default function CampaniaDetalle() {
           <Field label="Zonas contratadas" hint="Separadas por coma. El cliente ve «zonas cubiertas x de y» con esta lista.">
             <Input value={f.zonas} onChange={(e) => setF({ ...f, zonas: e.target.value })} placeholder="Col. Kennedy, Centro, Miraflores" />
           </Field>
+          {lista(f.zonas).length > 0 && (
+            <ul className="flex flex-wrap gap-2 sm:col-span-2" aria-label="Zonas con contorno en el mapa">
+              {lista(f.zonas).map((z) => (
+                <li key={z} className={`rounded-full px-3 py-1 text-xs ring-1 ring-inset ${data.conMapa.has(z) ? "text-brand-green-light ring-brand-green/40" : "text-[#ffd48a] ring-[#f5b544]/40"}`}>
+                  {data.conMapa.has(z) ? "✓" : "⚠"} {z} {data.conMapa.has(z) ? "" : "· sin contorno (dibújala en Zonas)"}
+                </li>
+              ))}
+            </ul>
+          )}
           <Field label="Fecha de inicio"><Input type="date" value={f.fecha_inicio} onChange={(e) => setF({ ...f, fecha_inicio: e.target.value })} /></Field>
           <Field label="Fecha final"><Input type="date" min={f.fecha_inicio || undefined} value={f.fecha_fin} onChange={(e) => setF({ ...f, fecha_fin: e.target.value })} /></Field>
           <div className="grid gap-3 sm:col-span-2">

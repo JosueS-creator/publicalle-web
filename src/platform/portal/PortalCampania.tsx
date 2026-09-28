@@ -2,6 +2,8 @@ import { useParams } from "react-router";
 import { sb } from "../supabase";
 import { estadoCampania, fecha, lineaLabel, momentoLabel, servicioLabel } from "../labels";
 import { Card, Empty, ErrorBox, Estado, Loading, Page, Stat, Table, Td, must, useAsync } from "../ui";
+import { Mapa, tramos } from "../MapaLazy";
+import { EnCurso } from "./EnCurso";
 
 /** Detalle para el cliente: solo jornadas y evidencias VALIDADAS (lo garantiza RLS). Sin horas internas. */
 export default function PortalCampania() {
@@ -17,7 +19,23 @@ export default function PortalCampania() {
       ? must(await sb.from("evidencias").select("id, ejecucion_id, storage_path, tipo, momento").in("ejecucion_id", jornadas.map((j) => j.id)).order("registrado_en"))
       : [];
     const urls = ev.length ? must(await sb.storage.from("evidencias").createSignedUrls(ev.map((e) => e.storage_path), 3600)) : [];
-    return { c: must(c), serv: must(serv), jor: jornadas, ev: ev.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })) };
+    const camp = must(c);
+    const zonas = camp.zonas.length ? must(await sb.from("zonas").select("nombre, contorno").in("nombre", camp.zonas)) : [];
+    // Mapa de jornadas validadas: recorrido SOLO dentro de zonas (MOVE) y punto registrado (EVENTS/PLACE). El servidor filtra.
+    const recientes = jornadas.slice(0, 60);
+    const geo = await Promise.all(
+      recientes.map(async (j) =>
+        j.linea === "move"
+          ? { rutas: tramos((await sb.rpc("recorrido_en_zonas", { p_ejecucion: j.id })).data ?? []), punto: null }
+          : { rutas: [], punto: ((await sb.rpc("punto_jornada", { p_ejecucion: j.id })).data ?? [])[0] ?? null, label: `${servicioLabel(j.linea, j.servicio)} · ${fecha(j.fecha)}` },
+      ),
+    );
+    const mapa = {
+      zonas,
+      rutas: geo.flatMap((g) => g.rutas),
+      puntos: geo.flatMap((g) => (g.punto ? [{ lat: g.punto.lat, lng: g.punto.lng, label: "label" in g ? g.label : undefined }] : [])),
+    };
+    return { c: camp, serv: must(serv), jor: jornadas, ev: ev.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), mapa };
   }, [id]);
 
   if (loading) return <Page title="Campaña" back="/portal"><Loading /></Page>;
@@ -46,6 +64,14 @@ export default function PortalCampania() {
         {hayMove && <Stat label="Zonas cubiertas" value={c.zonas.length ? `${[...cubiertas].filter((z) => c.zonas.includes(z)).length} de ${c.zonas.length}` : cubiertas.size} />}
         {hayMove && <Stat label="Km en zonas" value={`${km.toLocaleString("es-HN", { maximumFractionDigits: 1 })} km`} hint="Recorrido dentro de las zonas contratadas" />}
       </div>
+
+      <EnCurso campaniaId={c.id} zonas={data.mapa.zonas} />
+
+      {(data.mapa.zonas.length > 0 || data.mapa.rutas.length > 0 || data.mapa.puntos.length > 0) && (
+        <Card title="Mapa de cobertura" actions={<span className="text-xs text-muted">Recorridos verificados dentro de tus zonas</span>}>
+          <Mapa alto={380} etiqueta="Mapa de cobertura de la campaña" zonas={data.mapa.zonas} rutas={data.mapa.rutas} puntos={data.mapa.puntos} />
+        </Card>
+      )}
 
       {data.serv.length > 0 && (
         <Card title="Servicios">

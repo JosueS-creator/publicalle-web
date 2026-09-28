@@ -66,6 +66,30 @@ export type Database = {
           { foreignKeyName: "ejecuciones_validada_por_fkey"; columns: ["validada_por"]; isOneToOne: false; referencedRelation: "perfiles"; referencedColumns: ["id"] },
         ];
       };
+      ejecucion_eventos: {
+        Row: { capturado_en: string | null; ejecucion_id: string; id: number; lat: number | null; lng: number | null; precision_m: number | null; registrado_en: string; registrado_por: string; tipo: Database["public"]["Enums"]["tipo_evento"] };
+        Insert: { capturado_en?: string | null; ejecucion_id: string; lat?: number | null; lng?: number | null; precision_m?: number | null; registrado_por?: string; tipo: Database["public"]["Enums"]["tipo_evento"] };
+        Update: { [_ in never]: never };
+        Relationships: [
+          { foreignKeyName: "ejecucion_eventos_ejecucion_id_fkey"; columns: ["ejecucion_id"]; isOneToOne: false; referencedRelation: "ejecuciones"; referencedColumns: ["id"] },
+        ];
+      };
+      gps_puntos: {
+        Row: { capturado_en: string; ejecucion_id: string; id: number; lat: number; lng: number; precision_m: number | null; registrado_en: string };
+        Insert: { capturado_en: string; ejecucion_id: string; lat: number; lng: number; precision_m?: number | null };
+        Update: { [_ in never]: never };
+        Relationships: [
+          { foreignKeyName: "gps_puntos_ejecucion_id_fkey"; columns: ["ejecucion_id"]; isOneToOne: false; referencedRelation: "ejecuciones"; referencedColumns: ["id"] },
+        ];
+      };
+      incidencias: {
+        Row: { descripcion: string; ejecucion_id: string; id: string; lat: number | null; lng: number | null; registrado_en: string; registrado_por: string; tipo: string };
+        Insert: { descripcion: string; ejecucion_id: string; lat?: number | null; lng?: number | null; registrado_por?: string; tipo: string };
+        Update: { [_ in never]: never };
+        Relationships: [
+          { foreignKeyName: "incidencias_ejecucion_id_fkey"; columns: ["ejecucion_id"]; isOneToOne: false; referencedRelation: "ejecuciones"; referencedColumns: ["id"] },
+        ];
+      };
       empresas: {
         Row: { correo: string | null; creado_en: string; id: string; nombre: string; rtn: string | null; telefono: string | null };
         Insert: { correo?: string | null; creado_en?: string; id?: string; nombre: string; rtn?: string | null; telefono?: string | null };
@@ -103,6 +127,7 @@ export type Database = {
           empresa_id: string | null; estado: Database["public"]["Enums"]["estado_solicitud"]; fecha_fin: string | null; fecha_inicio: string | null;
           fechas_flexibles: boolean; folio: string | null; horario: string | null; id: string; lineas: Database["public"]["Enums"]["linea_servicio"][];
           notas_internas: string | null; objetivo: string; origen: string; presupuesto: string | null; servicios: string[]; zonas: string | null;
+          ubicacion_lat: number | null; ubicacion_lng: number | null; ubicacion_ref: string | null; radio_km: number | null; zonas_elegidas: string[];
         };
         Insert: { ciudades: string[]; contacto_nombre: string; contacto_telefono: string; objetivo: string; [k: string]: unknown };
         Update: { estado?: Database["public"]["Enums"]["estado_solicitud"]; notas_internas?: string | null; atendida_por?: string | null; empresa_id?: string | null };
@@ -116,6 +141,12 @@ export type Database = {
         Update: { activa?: boolean; capacidades?: string[]; ciudad_base?: string; nombre?: string; notas?: string | null; placa?: string | null; tipo?: string };
         Relationships: [];
       };
+      zonas: {
+        Row: { id: string; nombre: string; ciudad: string | null; contorno: [number, number][]; creado_en: string };
+        Insert: { nombre: string; ciudad?: string | null; contorno: [number, number][] };
+        Update: { nombre?: string; ciudad?: string | null; contorno?: [number, number][] };
+        Relationships: [];
+      };
     };
     Views: {
       v_tiempos_ejecucion: {
@@ -126,6 +157,13 @@ export type Database = {
     Functions: {
       convertir_solicitud: { Args: { p_empresa: string | null; p_empresa_nombre: string | null; p_nombre: string; p_solicitud: string }; Returns: string };
       es_staff: { Args: never; Returns: boolean };
+      recorrido_en_zonas: { Args: { p_ejecucion: string }; Returns: { lat: number; lng: number; capturado_en: string; zona: string }[] };
+      cobertura_jornada: { Args: { p_ejecucion: string }; Returns: { zona: string; km: number; puntos: number; ultima: string }[] };
+      punto_jornada: { Args: { p_ejecucion: string }; Returns: { lat: number; lng: number; registrado_en: string }[] };
+      jornadas_en_curso_cliente: {
+        Args: { p_campania: string };
+        Returns: { id: string; fecha: string; linea: Database["public"]["Enums"]["linea_servicio"]; servicio: string; estado: Database["public"]["Enums"]["estado_ejecucion"]; zonas: string[]; punto_nombre: string | null; fotos_recibidas: number }[];
+      };
       mi_empresa: { Args: never; Returns: string };
       mi_rol: { Args: never; Returns: Database["public"]["Enums"]["rol_usuario"] };
     };

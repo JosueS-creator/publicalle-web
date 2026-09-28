@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Truck, Users, LayoutGrid } from "lucide-react";
+import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Map as MapIcon, Truck, Users, LayoutGrid } from "lucide-react";
 import { AuthProvider, esStaff, useAuth } from "./auth";
 import { Shell, type NavItem } from "./Shell";
 import { Loading } from "./ui";
@@ -15,15 +15,19 @@ import CampaniaDetalle from "./admin/CampaniaDetalle";
 import Jornadas from "./admin/Jornadas";
 import JornadaDetalle from "./admin/JornadaDetalle";
 import Unidades from "./admin/Unidades";
+import Zonas from "./admin/Zonas";
 import Usuarios from "./admin/Usuarios";
 import PortalInicio from "./portal/PortalInicio";
 import PortalCampania from "./portal/PortalCampania";
+import OperadorInicio from "./operador/OperadorInicio";
+import OperadorJornada from "./operador/OperadorJornada";
 
 const adminNav: NavItem[] = [
   { to: "/admin", label: "Solicitudes", icon: <Inbox />, end: true },
   { to: "/admin/clientes", label: "Clientes", icon: <Building2 /> },
   { to: "/admin/campanias", label: "Campañas", icon: <FolderKanban /> },
   { to: "/admin/jornadas", label: "Jornadas", icon: <CalendarDays /> },
+  { to: "/admin/zonas", label: "Zonas", icon: <MapIcon /> },
   { to: "/admin/unidades", label: "Unidades", icon: <Truck /> },
   { to: "/admin/usuarios", label: "Usuarios", icon: <Users /> },
   { to: "/admin/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
@@ -32,12 +36,16 @@ const portalNav: NavItem[] = [
   { to: "/portal", label: "Mis campañas", icon: <LayoutGrid />, end: true },
   { to: "/portal/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
 ];
+const operadorNav: NavItem[] = [
+  { to: "/operador", label: "Mis jornadas", icon: <CalendarDays />, end: true },
+  { to: "/operador/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
+];
 
-function Guard({ allow, children }: { allow: "staff" | "cliente"; children: ReactNode }) {
+function Guard({ allow, children }: { allow: "staff" | "cliente" | "operador"; children: ReactNode }) {
   const { loading, session, perfil } = useAuth();
   if (loading) return <div className="grid min-h-dvh place-items-center"><Loading /></div>;
   if (!session) return <Navigate to="/entrar" replace />;
-  const ok = allow === "staff" ? esStaff(perfil) : perfil?.activo && perfil.rol === "cliente";
+  const ok = allow === "staff" ? esStaff(perfil) : perfil?.activo && perfil.rol === allow;
   if (!ok) return <Navigate to="/entrar" replace />;
   return <>{children}</>;
 }
@@ -66,6 +74,7 @@ export default function PlatformApp() {
             <Route path="campanias/:id" element={<CampaniaDetalle />} />
             <Route path="jornadas" element={<Jornadas />} />
             <Route path="jornadas/:id" element={<JornadaDetalle />} />
+            <Route path="zonas" element={<Zonas />} />
             <Route path="unidades" element={<Unidades />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="cuenta" element={<Cuenta />} />
@@ -76,6 +85,12 @@ export default function PlatformApp() {
             <Route path="campanias/:id" element={<PortalCampania />} />
             <Route path="cuenta" element={<Cuenta />} />
             <Route path="*" element={<Navigate to="/portal" replace />} />
+          </Route>
+          <Route path="/operador" element={<Guard allow="operador"><Shell nav={operadorNav} area="Operador" /></Guard>}>
+            <Route index element={<OperadorInicio />} />
+            <Route path="jornadas/:id" element={<OperadorJornada />} />
+            <Route path="cuenta" element={<Cuenta />} />
+            <Route path="*" element={<Navigate to="/operador" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/entrar" replace />} />
         </Routes>

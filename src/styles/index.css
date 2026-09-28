@@ -401,3 +401,9 @@ html body {
     font-size: 30px;
   }
 }
+
+/* Leaflet (mapas del admin/portal): el reset de imágenes rompe los mosaicos */
+.leaflet-container.leaflet-container { background: #0b1220; font-family: var(--font-sans); }
+.leaflet-container img { max-width: none !important; height: auto; }
+.leaflet-container .leaflet-control-attribution.leaflet-control-attribution { background: rgb(5 10 23 / 0.75); color: #8d97ad; }
+.leaflet-container .leaflet-control-attribution a { color: #c8d0e0; }

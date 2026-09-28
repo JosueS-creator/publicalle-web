@@ -8,6 +8,11 @@ export type BriefData = {
   ciudades: string[];
   ciudadOtra: string;
   zonas: string;
+  /** Mapa (opcional): ubicación del negocio, radio a recorrer y zonas dibujadas elegidas. */
+  ubicacion: { lat: number; lng: number } | null;
+  ubicacionRef: string;
+  radioKm: number;
+  zonasElegidas: string[];
   servicios: string[];
   noSeguro: boolean;
   fechaInicio: string;
@@ -31,7 +36,7 @@ export type BriefData = {
 };
 
 export const emptyBrief: BriefData = {
-  objetivo: "", objetivoOtro: "", ciudades: [], ciudadOtra: "", zonas: "", servicios: [], noSeguro: false,
+  objetivo: "", objetivoOtro: "", ciudades: [], ciudadOtra: "", zonas: "", ubicacion: null, ubicacionRef: "", radioKm: 0, zonasElegidas: [], servicios: [], noSeguro: false,
   fechaInicio: "", fechaFin: "", fechasFlexibles: false, horario: "", horasDia: "", horasMomentos: [], horaDesde: "", presupuesto: "", presupuestoMonto: "",
   comentarios: "", nombre: "", empresa: "", cargo: "", telefono: "", correo: "", sitio: "",
 };
@@ -94,6 +99,8 @@ export function briefSummary(d: BriefData): { label: string; value: string }[] {
     { label: "Objetivo", value: objetivo },
     { label: "Ciudades", value: briefCitiesList(d).join(", ") },
     { label: "Zonas o puntos", value: d.zonas.trim() },
+    { label: "Ubicación del negocio", value: d.ubicacion ? `https://maps.google.com/?q=${d.ubicacion.lat},${d.ubicacion.lng}` : "" },
+    { label: "Área a recorrer", value: [d.ubicacion && d.radioKm ? `${d.radioKm} km a la redonda` : "", d.zonasElegidas.join(", ")].filter(Boolean).join(" · ") },
     { label: "Servicios", value: [servicios, d.noSeguro ? "No estoy seguro: necesito asesoría" : ""].filter(Boolean).join(" · ") },
     { label: "Fechas", value: d.fechasFlexibles ? "Flexibles" : [d.fechaInicio, d.fechaFin].filter(Boolean).join(" → ") },
     { label: "Horario", value: horarioTexto(d) },
@@ -127,6 +134,11 @@ export async function submitBrief(d: BriefData): Promise<BriefResult> {
     objetivo: d.objetivo === "Otro" ? d.objetivoOtro.trim() : d.objetivo,
     ciudades: briefCitiesList(d),
     zonas: d.zonas.trim() || null,
+    ubicacion_lat: d.ubicacion?.lat ?? null,
+    ubicacion_lng: d.ubicacion?.lng ?? null,
+    ubicacion_ref: d.ubicacion && d.ubicacionRef ? d.ubicacionRef.slice(0, 200) : null,
+    radio_km: d.ubicacion && d.radioKm ? d.radioKm : null,
+    zonas_elegidas: d.zonasElegidas,
     lineas,
     servicios: [...d.servicios, ...(d.noSeguro ? ["asesoria"] : [])],
     fecha_inicio: d.fechasFlexibles ? null : d.fechaInicio || null,

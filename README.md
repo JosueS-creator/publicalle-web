@@ -109,9 +109,12 @@ Modelo operativo, roles, evidencia por línea y qué ve cada rol: `docs/platafor
 - **Brief de campaña** (sección final de la web): 5 pasos (objetivo, territorio, servicios, fechas, contacto). **Sin precios.**
   Con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` guarda en la tabla `solicitudes` y muestra un número de solicitud;
   sin ellas, prepara el mensaje de WhatsApp. Incluye campo trampa anti-spam.
+  En «Territorio» el cliente puede (opcional) ubicar su negocio en el mapa y elegir un radio (1–5 km) y/o zonas dibujadas; al convertir la solicitud, el radio se crea como zona real.
 - **Admin y portal** (`src/platform/`, se cargan aparte de la web pública):
   - `/entrar` — acceso con correo y contraseña (los usuarios los crea el admin; no hay registro público).
   - `/admin` — solicitudes (convertir en campaña), clientes, campañas (servicios, zonas, jornadas), jornadas (validación y evidencias), unidades, usuarios.
+  - `/operador` — el operador ve sus jornadas; registra inicio/pausa/fin (MOVE, con GPS mientras la pantalla está abierta), llegada/salida (EVENTS) o instalación/verificación (PLACE), sube fotos (se comprimen en el teléfono) y reporta problemas. Mínimo de fotos para finalizar: MOVE 2, EVENTS 2, PLACE 1.
+  - **Zonas** (`/admin/zonas`): contornos dibujados en el mapa. El recorrido y los km que ve el cliente se filtran en el servidor SOLO dentro de estas zonas; durante la jornada, con 15 min de retraso.
   - `/portal` — el cliente ve sus campañas, jornadas **validadas**, zonas cubiertas, km en zonas y evidencias validadas. Nunca ve horas internas.
 - **Base de datos:** `supabase/migrations/` (en orden). **Edge Function** `supabase/functions/admin-usuarios` (crea usuarios y cambia contraseñas con la llave secreta, solo del lado servidor).
 - **Pruebas de seguridad:** `supabase/tests/` (37 pruebas; `sh reset_local.sh && python3 run_tests.py`).

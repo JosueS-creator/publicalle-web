@@ -30,6 +30,7 @@ export default function Usuarios() {
   const [f, setF] = useState({ rol: (empresaInicial ? "cliente" : "cliente") as Enum<"rol_usuario">, empresa_id: empresaInicial, nombre: "", correo: "", telefono: "", password: generarClave() });
   const [creado, setCreado] = useState<{ correo: string; password: string } | null>(null);
   const [claveDe, setClaveDe] = useState<{ id: string; password: string } | null>(null);
+  const [claveNueva, setClaveNueva] = useState<{ correo: string; password: string } | null>(null);
   const crear = useAction();
   const acc = useAction();
 
@@ -72,7 +73,7 @@ export default function Usuarios() {
           <div className="grid gap-3 sm:col-span-2 lg:col-span-3">
             <ErrorBox msg={crear.error} />
             {creado && (
-              <OkBox msg={`Usuario creado. Envíale: ${location.origin}/entrar · correo ${creado.correo} · contraseña temporal ${creado.password}. Puede cambiarla en «Mi cuenta».`} />
+              <Credenciales titulo="Usuario creado. Envíale estos datos:" correo={creado.correo} password={creado.password} />
             )}
             <div><Btn type="submit" loading={crear.busy} icon={<UserPlus className="size-4" aria-hidden />}>Crear usuario</Btn></div>
           </div>
@@ -82,6 +83,7 @@ export default function Usuarios() {
       <Card title="Usuarios">
         <ErrorBox msg={error ?? acc.error} />
         <OkBox msg={acc.ok} />
+        {claveNueva && <div className="mb-4"><Credenciales titulo="Contraseña cambiada. Envíale estos datos:" correo={claveNueva.correo} password={claveNueva.password} /></div>}
         {loading ? (
           <Loading />
         ) : !data?.users.length ? (
@@ -109,8 +111,9 @@ export default function Usuarios() {
                             onClick={() => acc.run(async () => {
                               const r = await adminUsuarios({ accion: "contrasena", id: u.id, password: claveDe.password });
                               if (r.error) throw new Error(r.error);
+                              setClaveNueva({ correo: u.correo ?? "", password: claveDe.password });
                               setClaveDe(null);
-                            }, `Nueva contraseña de ${u.correo}: ${claveDe.password}`)}>
+                            })}>
                             Guardar
                           </Btn>
                           <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setClaveDe(null)}>Cancelar</Btn>
@@ -135,5 +138,27 @@ export default function Usuarios() {
         )}
       </Card>
     </Page>
+  );
+}
+
+/** Datos de acceso listos para copiar (sin signos pegados que se confundan con la contraseña). */
+function Credenciales({ titulo, correo, password }: { titulo: string; correo: string; password: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const url = `${location.origin}/entrar`;
+  const texto = `Acceso al portal de Publicalle\n${url}\nCorreo: ${correo}\nContraseña temporal: ${password}\n(Puedes cambiarla en «Mi cuenta».)`;
+  return (
+    <div role="status" className="grid gap-3 rounded-xl bg-brand-green/10 p-4 ring-1 ring-inset ring-brand-green/30">
+      <p className="text-sm font-semibold text-brand-green-light">{titulo}</p>
+      <dl className="grid gap-2 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-4">
+        <dt className="text-muted">Enlace</dt><dd className="break-all font-mono">{url}</dd>
+        <dt className="text-muted">Correo</dt><dd className="break-all font-mono">{correo}</dd>
+        <dt className="text-muted">Contraseña</dt><dd className="font-mono text-base font-bold tracking-wide select-all">{password}</dd>
+      </dl>
+      <div>
+        <Btn variant="secondary" onClick={async () => { try { await navigator.clipboard.writeText(texto); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { /* sin permiso de portapapeles */ } }}>
+          {copiado ? "¡Copiado!" : "Copiar datos de acceso"}
+        </Btn>
+      </div>
+    </div>
   );
 }

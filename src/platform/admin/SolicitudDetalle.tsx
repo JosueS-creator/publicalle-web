@@ -4,6 +4,7 @@ import { ArrowRight, MessageCircle, Save } from "lucide-react";
 import { sb } from "../supabase";
 import { estadoSolicitud, fecha, fechaHora, servicioIdLabel } from "../labels";
 import type { Enum } from "../database.types";
+import { Mapa } from "../MapaLazy";
 import { Btn, Card, Dl, ErrorBox, Estado, Field, Input, Loading, OkBox, Page, Select, Textarea, must, useAction, useAsync } from "../ui";
 
 export default function SolicitudDetalle() {
@@ -14,7 +15,9 @@ export default function SolicitudDetalle() {
       sb.from("solicitudes").select("*").eq("id", id).single(),
       sb.from("empresas").select("id, nombre").order("nombre"),
     ]);
-    return { s: must(s), empresas: must(empresas) };
+    const sol = must(s);
+    const zonasMapa = sol.zonas_elegidas.length ? must(await sb.from("zonas").select("nombre, contorno").in("nombre", sol.zonas_elegidas)) : [];
+    return { s: sol, empresas: must(empresas), zonasMapa };
   }, [id]);
 
   const [estado, setEstado] = useState<Enum<"estado_solicitud">>("nueva");
@@ -65,6 +68,28 @@ export default function SolicitudDetalle() {
               ]}
             />
           </Card>
+          {(s.ubicacion_lat != null || s.zonas_elegidas.length > 0) && (
+            <Card title="Ubicación y área elegida en el mapa">
+              <div className="grid gap-3">
+                <Mapa
+                  alto={320}
+                  etiqueta="Ubicación del negocio y área a recorrer"
+                  zonas={data.zonasMapa}
+                  seleccionadas={s.zonas_elegidas}
+                  puntos={s.ubicacion_lat != null && s.ubicacion_lng != null ? [{ lat: s.ubicacion_lat, lng: s.ubicacion_lng, label: "Negocio" }] : []}
+                  circulo={s.ubicacion_lat != null && s.ubicacion_lng != null && s.radio_km ? { lat: s.ubicacion_lat, lng: s.ubicacion_lng, km: Number(s.radio_km) } : undefined}
+                />
+                <Dl
+                  items={[
+                    ["Referencia", s.ubicacion_ref],
+                    ["Radio", s.radio_km ? `${s.radio_km} km a la redonda (se crea como zona al convertir)` : ""],
+                    ["Zonas elegidas", s.zonas_elegidas.join(", ")],
+                    ["Abrir en Google Maps", s.ubicacion_lat != null ? <a className="text-brand-green-light underline" href={`https://maps.google.com/?q=${s.ubicacion_lat},${s.ubicacion_lng}`} target="_blank" rel="noreferrer">Ver ubicación</a> : ""],
+                  ]}
+                />
+              </div>
+            </Card>
+          )}
           <Card title="Contacto">
             <Dl
               items={[

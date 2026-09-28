@@ -22,6 +22,7 @@ export default function Login() {
   if (session && perfil?.activo) {
     if (esStaff(perfil)) return <Navigate to="/admin" replace />;
     if (perfil.rol === "cliente") return <Navigate to="/portal" replace />;
+    if (perfil.rol === "operador") return <Navigate to="/operador" replace />;
   }
 
   const submit = async (e: FormEvent) => {
@@ -33,7 +34,7 @@ export default function Login() {
     setBusy(false);
   };
 
-  const sinAcceso = session && (!perfil || !perfil.activo || perfil.rol === "operador");
+  const sinAcceso = session && (!perfil || !perfil.activo);
 
   return (
     <Center>
@@ -43,14 +44,8 @@ export default function Login() {
         </a>
         {sinAcceso ? (
           <div className="grid gap-4 rounded-2xl bg-surface p-6 ring-1 ring-inset ring-line">
-            <h1 className="text-xl font-bold">
-              {perfil?.rol === "operador" && perfil.activo ? "Usa la app del operador" : "Tu cuenta no tiene acceso"}
-            </h1>
-            <p className="text-sm text-muted">
-              {perfil?.rol === "operador" && perfil.activo
-                ? "Las jornadas se registran desde la app del operador, que estará disponible pronto."
-                : "Tu usuario no está activo o aún no tiene un perfil asignado. Escríbele al equipo de Publicalle."}
-            </p>
+            <h1 className="text-xl font-bold">Tu cuenta no tiene acceso</h1>
+            <p className="text-sm text-muted">Tu usuario no está activo o aún no tiene un perfil asignado. Escríbele al equipo de Publicalle.</p>
             <Btn variant="secondary" onClick={signOut}>
               Cerrar sesión
             </Btn>
@@ -59,7 +54,7 @@ export default function Login() {
           <form onSubmit={submit} className="grid gap-4 rounded-2xl bg-surface p-6 ring-1 ring-inset ring-line">
             <div>
               <h1 className="text-xl font-bold">Entrar</h1>
-              <p className="mt-1 text-sm text-muted">Portal de clientes y panel de Publicalle.</p>
+              <p className="mt-1 text-sm text-muted">Clientes, operadores y equipo de Publicalle.</p>
             </div>
             {!hasSupabase && <ErrorBox msg="Falta configurar la conexión con la base de datos (variables de Supabase)." />}
             <Field label="Correo">

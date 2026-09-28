@@ -5,6 +5,8 @@ import { useAuth } from "../auth";
 import { sb } from "../supabase";
 import { estadoEjecucion, estadoEvidencia, fecha, fechaHora, hora, momentoLabel, servicioLabel } from "../labels";
 import type { Database, Enum } from "../database.types";
+import { kmRecorrido } from "../operador/geo";
+import { Mapa, tramos } from "../MapaLazy";
 import { Badge, Btn, Card, Chips, Dl, Empty, ErrorBox, Estado, Field, Input, Loading, OkBox, Page, Select, Textarea, must, useAction, useAsync } from "../ui";
 
 const MIMES = ["image/jpeg", "image/webp", "image/heic", "video/mp4"];
@@ -19,7 +21,7 @@ export default function JornadaDetalle() {
   const { id = "" } = useParams();
   const { perfil } = useAuth();
   const { data, error, loading, reload } = useAsync(async () => {
-    const [j, ev, t, unidades, operadores] = await Promise.all([
+    const [j, ev, t, gps, incid, unidades, operadores, enZona, cob, punto] = await Promise.all([
       sb
         .from("ejecuciones")
         .select("*, campanias(id, nombre, zonas, empresas(nombre)), unidades(nombre), operador:perfiles!ejecuciones_operador_id_fkey(nombre), validador:perfiles!ejecuciones_validada_por_fkey(nombre)")
@@ -27,12 +29,22 @@ export default function JornadaDetalle() {
         .single(),
       sb.from("evidencias").select("*").eq("ejecucion_id", id).order("registrado_en"),
       sb.from("v_tiempos_ejecucion").select("*").eq("ejecucion_id", id).maybeSingle(),
+      sb.from("gps_puntos").select("lat, lng, capturado_en").eq("ejecucion_id", id).order("capturado_en").limit(20000),
+      sb.from("incidencias").select("id, tipo, descripcion, registrado_en").eq("ejecucion_id", id).order("registrado_en"),
       sb.from("unidades").select("id, nombre").eq("activa", true).order("nombre"),
       sb.from("perfiles").select("id, nombre").eq("rol", "operador").eq("activo", true).order("nombre"),
+      sb.rpc("recorrido_en_zonas", { p_ejecucion: id }),
+      sb.rpc("cobertura_jornada", { p_ejecucion: id }),
+      sb.rpc("punto_jornada", { p_ejecucion: id }),
     ]);
     const evid = must(ev);
     const urls = evid.length ? must(await sb.storage.from("evidencias").createSignedUrls(evid.map((e) => e.storage_path), 3600)) : [];
-    return { j: must(j), ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, unidades: must(unidades), operadores: must(operadores) };
+    const puntos = must(gps);
+    const jj = must(j);
+    const nombresZonas = [...new Set([...jj.zonas, ...(jj.campanias?.zonas ?? [])])];
+    const zonasMapa = nombresZonas.length ? must(await sb.from("zonas").select("nombre, contorno").in("nombre", nombresZonas)) : [];
+    const mapa = { zonas: zonasMapa, todo: tramos(puntos), enZona: tramos(must(enZona)), punto: must(punto)[0] ?? null, cobertura: must(cob) };
+    return { mapa, j: jj, ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, gps: { n: puntos.length, km: kmRecorrido(puntos) }, incid: must(incid), unidades: must(unidades), operadores: must(operadores) };
   }, [id]);
 
   const [p, setP] = useState({ fecha: "", hi: "", hf: "", unidad: "", operador: "", punto: "" });
@@ -138,6 +150,17 @@ export default function JornadaDetalle() {
                     {zonasOpts.length ? <Chips label="Zonas cubiertas" options={zonasOpts} value={val.zonas} onChange={(z) => setVal({ ...val, zonas: z })} /> : <span className="text-xs text-muted">La campaña no tiene zonas contratadas.</span>}
                   </div>
                   <Field label="Km dentro de las zonas"><Input type="number" min={0} step="0.1" inputMode="decimal" value={val.km} onChange={(e) => setVal({ ...val, km: e.target.value })} /></Field>
+                  {data.mapa.cobertura.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2 text-sm ring-1 ring-inset ring-line">
+                      <span className="text-muted">
+                        Calculado con GPS: {data.mapa.cobertura.map((c) => `${c.zona} ${Number(c.km).toFixed(2)} km`).join(" · ")}
+                      </span>
+                      <Btn variant="secondary" className="min-h-8 px-3 text-xs"
+                        onClick={() => setVal({ ...val, zonas: data.mapa.cobertura.map((c) => c.zona), km: data.mapa.cobertura.reduce((a, c) => a + Number(c.km), 0).toFixed(2) })}>
+                        Usar cálculo
+                      </Btn>
+                    </div>
+                  )}
                 </>
               )}
               <Field label="Motivo (solo si se rechaza)"><Textarea rows={2} maxLength={500} value={val.motivo} onChange={(e) => setVal({ ...val, motivo: e.target.value })} /></Field>
@@ -178,11 +201,46 @@ export default function JornadaDetalle() {
         </Card>
       </div>
 
-      <Card title="Tiempos (interno)" actions={<Badge tone="amber">No visible para el cliente</Badge>}>
-        {data.t?.inicio ? (
-          <Dl items={[["Inicio", fechaHora(data.t.inicio)], ["Fin", fechaHora(data.t.fin)], ["Tiempo efectivo", data.t.tiempo_efectivo], ["Tiempo en pausa", data.t.tiempo_pausado]]} />
+      {(data.mapa.zonas.length > 0 || data.mapa.todo.length > 0 || data.mapa.punto) && (
+        <Card title="Mapa" actions={<span className="text-xs text-muted">Verde: dentro de zonas (lo ve el cliente) · Gris: fuera de zonas (solo interno)</span>}>
+          <Mapa
+            alto={380}
+            etiqueta="Recorrido de la jornada"
+            zonas={data.mapa.zonas}
+            rutasSecundarias={data.mapa.todo}
+            rutas={data.mapa.enZona}
+            puntos={data.mapa.punto ? [{ lat: data.mapa.punto.lat, lng: data.mapa.punto.lng, label: "Punto registrado" }] : []}
+          />
+        </Card>
+      )}
+
+      <Card title="Registro del operador (interno)" actions={<Badge tone="amber">No visible para el cliente</Badge>}>
+        {data.t?.inicio || data.gps.n ? (
+          <Dl
+            items={[
+              ["Inicio", fechaHora(data.t?.inicio)],
+              ["Fin", fechaHora(data.t?.fin)],
+              ["Tiempo efectivo", data.t?.tiempo_efectivo],
+              ["Tiempo en pausa", data.t?.tiempo_pausado],
+              ["Recorrido GPS (total)", data.gps.n ? `${data.gps.km.toFixed(1)} km · ${data.gps.n} puntos` : ""],
+            ]}
+          />
         ) : (
-          <p className="text-sm text-muted">Sin registros de la app del operador todavía.</p>
+          <p className="text-sm text-muted">Sin registros del operador todavía.</p>
+        )}
+        {j.linea === "move" && data.gps.n > 0 && <p className="mt-3 text-xs text-muted">Referencia para «Km dentro de las zonas»: el total incluye traslados fuera de las zonas.</p>}
+        {data.incid.length > 0 && (
+          <div className="mt-4 grid gap-2">
+            <p className="text-sm font-semibold text-[#ffd48a]">Problemas reportados ({data.incid.length})</p>
+            <ul className="grid gap-2">
+              {data.incid.map((x) => (
+                <li key={x.id} className="rounded-xl bg-[#f5b544]/10 px-3 py-2 text-sm ring-1 ring-inset ring-[#f5b544]/25">
+                  <span className="font-semibold">{x.tipo}</span> · <span className="text-muted">{fechaHora(x.registrado_en)}</span>
+                  <p className="mt-0.5">{x.descripcion}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </Card>
 
