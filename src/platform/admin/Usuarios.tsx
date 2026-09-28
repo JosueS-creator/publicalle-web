@@ -72,7 +72,7 @@ export default function Usuarios() {
           <div className="grid gap-3 sm:col-span-2 lg:col-span-3">
             <ErrorBox msg={crear.error} />
             {creado && (
-              <OkBox msg={`Usuario creado. Acceso: ${location.origin}/entrar · ${creado.correo} · contraseña: ${creado.password}`} />
+              <OkBox msg={`Usuario creado. Envíale: ${location.origin}/entrar · correo ${creado.correo} · contraseña temporal ${creado.password}. Puede cambiarla en «Mi cuenta».`} />
             )}
             <div><Btn type="submit" loading={crear.busy} icon={<UserPlus className="size-4" aria-hidden />}>Crear usuario</Btn></div>
           </div>

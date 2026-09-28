@@ -1,10 +1,11 @@
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import { CalendarDays, Building2, FolderKanban, Inbox, Truck, Users, LayoutGrid } from "lucide-react";
+import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Truck, Users, LayoutGrid } from "lucide-react";
 import { AuthProvider, esStaff, useAuth } from "./auth";
 import { Shell, type NavItem } from "./Shell";
 import { Loading } from "./ui";
 import Login from "./Login";
+import Cuenta from "./Cuenta";
 import Solicitudes from "./admin/Solicitudes";
 import SolicitudDetalle from "./admin/SolicitudDetalle";
 import Clientes from "./admin/Clientes";
@@ -25,8 +26,12 @@ const adminNav: NavItem[] = [
   { to: "/admin/jornadas", label: "Jornadas", icon: <CalendarDays /> },
   { to: "/admin/unidades", label: "Unidades", icon: <Truck /> },
   { to: "/admin/usuarios", label: "Usuarios", icon: <Users /> },
+  { to: "/admin/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
 ];
-const portalNav: NavItem[] = [{ to: "/portal", label: "Mis campañas", icon: <LayoutGrid />, end: true }];
+const portalNav: NavItem[] = [
+  { to: "/portal", label: "Mis campañas", icon: <LayoutGrid />, end: true },
+  { to: "/portal/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
+];
 
 function Guard({ allow, children }: { allow: "staff" | "cliente"; children: ReactNode }) {
   const { loading, session, perfil } = useAuth();
@@ -63,11 +68,13 @@ export default function PlatformApp() {
             <Route path="jornadas/:id" element={<JornadaDetalle />} />
             <Route path="unidades" element={<Unidades />} />
             <Route path="usuarios" element={<Usuarios />} />
+            <Route path="cuenta" element={<Cuenta />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Route>
           <Route path="/portal" element={<Guard allow="cliente"><Shell nav={portalNav} area="Portal de clientes" /></Guard>}>
             <Route index element={<PortalInicio />} />
             <Route path="campanias/:id" element={<PortalCampania />} />
+            <Route path="cuenta" element={<Cuenta />} />
             <Route path="*" element={<Navigate to="/portal" replace />} />
           </Route>
           <Route path="*" element={<Navigate to="/entrar" replace />} />

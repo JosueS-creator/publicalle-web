@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import { CalendarPlus, Plus, Save, Trash2 } from "lucide-react";
 import { sb } from "../supabase";
 import { catalogo, estadoCampania, estadoEjecucion, fecha, hora, lineaLabel, lista, servicioLabel } from "../labels";
@@ -173,6 +173,8 @@ export default function CampaniaDetalle() {
         )}
         <NuevaJornada campaniaId={id} zonasCampania={c.zonas} servicios={data.serv} unidades={data.unidades} operadores={data.operadores} onDone={reload} />
       </Card>
+
+      <EliminarCampania id={id} nombre={c.nombre} solicitudId={c.solicitud_id} validadas={data.jor.filter((j) => j.estado === "validada").length} />
     </Page>
   );
 }
@@ -247,5 +249,58 @@ function NuevaJornada({
         </div>
       </div>
     </form>
+  );
+}
+
+/** Borra la campaña con sus servicios, jornadas, registros y evidencias (incluidos los archivos). No se puede deshacer. */
+function EliminarCampania({ id, nombre, solicitudId, validadas }: { id: string; nombre: string; solicitudId: string | null; validadas: number }) {
+  const nav = useNavigate();
+  const [abierto, setAbierto] = useState(false);
+  const [confirma, setConfirma] = useState("");
+  const acc = useAction();
+
+  return (
+    <Card title="Eliminar campaña" className="ring-red-400/25">
+      {!abierto ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted">Borra la campaña, sus jornadas y todas sus evidencias. No se puede deshacer.</p>
+          <Btn variant="danger" icon={<Trash2 className="size-4" aria-hidden />} onClick={() => setAbierto(true)}>Eliminar campaña</Btn>
+        </div>
+      ) : (
+        <form
+          className="grid gap-4"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            acc.run(async () => {
+              if (confirma.trim() !== nombre.trim()) throw new Error("El nombre no coincide.");
+              // 1) rutas de los archivos de evidencia (Storage no se borra en cascada)
+              const jor = must(await sb.from("ejecuciones").select("id").eq("campania_id", id));
+              const paths = jor.length ? must(await sb.from("evidencias").select("storage_path").in("ejecucion_id", jor.map((j) => j.id))).map((e) => e.storage_path) : [];
+              // 2) campaña: servicios, jornadas, eventos, GPS, evidencias e incidencias se borran en cascada
+              must(await sb.from("campanias").delete().eq("id", id).select("id").single());
+              // 3) archivos (si esto falla, solo quedan archivos huérfanos; los datos ya se borraron)
+              for (let i = 0; i < paths.length; i += 100) await sb.storage.from("evidencias").remove(paths.slice(i, i + 100));
+              // 4) la solicitud de origen vuelve a "en revisión" para poder convertirla otra vez
+              if (solicitudId) await sb.from("solicitudes").update({ estado: "en_revision" }).eq("id", solicitudId);
+              nav("/admin/campanias", { replace: true });
+            });
+          }}
+        >
+          {validadas > 0 && (
+            <ErrorBox msg={`Esta campaña tiene ${validadas} ${validadas === 1 ? "jornada validada" : "jornadas validadas"} que el cliente ya ve en su portal. Si solo quieres detenerla, cambia su estado a «Cancelada».`} />
+          )}
+          <Field label={`Para confirmar, escribe el nombre de la campaña: ${nombre}`}>
+            <Input value={confirma} onChange={(e) => setConfirma(e.target.value)} autoComplete="off" />
+          </Field>
+          <ErrorBox msg={acc.error} />
+          <div className="flex flex-wrap gap-2">
+            <Btn type="submit" variant="danger" loading={acc.busy} disabled={confirma.trim() !== nombre.trim()} icon={<Trash2 className="size-4" aria-hidden />}>
+              Eliminar definitivamente
+            </Btn>
+            <Btn variant="ghost" onClick={() => { setAbierto(false); setConfirma(""); }}>Cancelar</Btn>
+          </div>
+        </form>
+      )}
+    </Card>
   );
 }

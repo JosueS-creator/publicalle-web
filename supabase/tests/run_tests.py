@@ -45,6 +45,10 @@ tests=[
  ("Admin sube evidencia (pendiente)", 'authenticated',ADMIN, f"insert into evidencias (ejecucion_id,storage_path,sha256) values ('{X2}','{X2}/admin.jpg','{'e'*64}') returning estado;", True, 'pendiente'),
  ("Admin sube archivo a Storage", 'authenticated',ADMIN, f"insert into storage.objects (bucket_id,name) values ('evidencias','{X2}/admin.jpg');", True, None),
  ("Cliente NO sube evidencias", 'authenticated',C1, f"insert into evidencias (ejecucion_id,storage_path,sha256) values ('{X2}','{X2}/c.jpg','{'f'*64}');", False, None),
+ ("Cliente NO puede borrar campañas", 'authenticated',C1, "with d as (delete from campanias returning 1) select count(*) from d;", True, '0'),
+ ("Cliente NO borra archivos en Storage", 'authenticated',C1, "with d as (delete from storage.objects returning 1) select count(*) from d;", True, '0'),
+ ("Admin borra campaña (jornadas y evidencias en cascada)", 'authenticated',ADMIN, "delete from campanias where id='c0000000-0000-0000-0000-000000000001'; select (select count(*) from ejecuciones where campania_id='c0000000-0000-0000-0000-000000000001')::text || '/' || (select count(*) from evidencias where ejecucion_id='d0000000-0000-0000-0000-000000000003');", True, '0/0'),
+ ("Admin borra archivos de evidencias en Storage", 'authenticated',ADMIN, "with d as (delete from storage.objects where bucket_id='evidencias' returning 1) select (count(*)>0)::text from d;", True, 'true'),
 ]
 ok=0
 for name,role,uid,sql,should_pass,expect in tests:
