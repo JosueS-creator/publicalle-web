@@ -9,7 +9,7 @@ const VERDE = "#22c9b4";
 const AZUL = "#3aa8f0";
 
 /**
- * Mapa (Leaflet + OpenStreetMap/CARTO). Muestra zonas, recorridos y puntos.
+ * Mapa (Leaflet + OpenStreetMap). Muestra zonas, recorridos y puntos.
  * - `rutas`: tramos en verde (dentro de zona). `rutasSecundarias`: tramos en gris (solo admin).
  * - `onClick`: para dibujar contornos (admin → Zonas).
  */
@@ -64,10 +64,11 @@ export default function Mapa({
   useEffect(() => {
     if (!el.current || map.current) return;
     const m = L.map(el.current, { center: TEGUCIGALPA, zoom: 12, scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    // Mosaicos estándar de OpenStreetMap (gratis, sin llave). Se oscurecen con CSS (.pc-mapa-oscuro).
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
-      subdomains: "abcd",
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      className: "pc-mapa-oscuro",
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(m);
     m.on("click", (e: L.LeafletMouseEvent) => clickRef.current?.({ lat: e.latlng.lat, lng: e.latlng.lng }));
     capa.current = L.layerGroup().addTo(m);

@@ -173,7 +173,7 @@ export function MapaBrief({
           </div>
         </div>
       )}
-      <p className="text-xs text-brand-white/60">Mapa: © OpenStreetMap. La ubicación solo se usa para planificar tu campaña.</p>
+      <p className="text-xs text-brand-white/60">Mapa y búsqueda: © OpenStreetMap. La ubicación solo se usa para planificar tu campaña.</p>
     </div>
   );
 }

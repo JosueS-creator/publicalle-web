@@ -407,3 +407,4 @@ html body {
 .leaflet-container img { max-width: none !important; height: auto; }
 .leaflet-container .leaflet-control-attribution.leaflet-control-attribution { background: rgb(5 10 23 / 0.75); color: #8d97ad; }
 .leaflet-container .leaflet-control-attribution a { color: #c8d0e0; }
+.pc-mapa-oscuro { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6); }
