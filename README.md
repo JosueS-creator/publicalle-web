@@ -118,3 +118,4 @@ Modelo operativo, roles, evidencia por línea y qué ve cada rol: `docs/platafor
 2. SQL Editor → pegar y ejecutar la migración.
 3. En Vercel → Environment Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (solo la llave **anon**).
 4. Ver solicitudes: Table Editor → `solicitudes` (hasta que exista el panel de admin).
+   Deploy
