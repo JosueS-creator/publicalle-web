@@ -109,13 +109,14 @@ Modelo operativo, roles, evidencia por línea y qué ve cada rol: `docs/platafor
 - **Brief de campaña** (sección final de la web): 5 pasos (objetivo, territorio, servicios, fechas, contacto). **Sin precios.**
   Con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` guarda en la tabla `solicitudes` y muestra un número de solicitud;
   sin ellas, prepara el mensaje de WhatsApp. Incluye campo trampa anti-spam.
-- **Base de datos:** `supabase/migrations/20260928000001_plataforma_base.sql` (tablas, reglas de acceso RLS, hora de servidor,
-  agenda de unidades sin cruces, bucket privado `evidencias`).
-- **Pruebas de seguridad:** `supabase/tests/` (30 pruebas).
+- **Admin y portal** (`src/platform/`, se cargan aparte de la web pública):
+  - `/entrar` — acceso con correo y contraseña (los usuarios los crea el admin; no hay registro público).
+  - `/admin` — solicitudes (convertir en campaña), clientes, campañas (servicios, zonas, jornadas), jornadas (validación y evidencias), unidades, usuarios.
+  - `/portal` — el cliente ve sus campañas, jornadas **validadas**, zonas cubiertas, km en zonas y evidencias validadas. Nunca ve horas internas.
+- **Base de datos:** `supabase/migrations/` (en orden). **Edge Function** `supabase/functions/admin-usuarios` (crea usuarios y cambia contraseñas con la llave secreta, solo del lado servidor).
+- **Pruebas de seguridad:** `supabase/tests/` (37 pruebas; `sh reset_local.sh && python3 run_tests.py`).
 
-### Activar Supabase
-1. Crear el proyecto (plan gratuito: máx. 2 proyectos activos por cuenta).
-2. SQL Editor → pegar y ejecutar la migración.
-3. En Vercel → Environment Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (solo la llave **anon**).
-4. Ver solicitudes: Table Editor → `solicitudes` (hasta que exista el panel de admin).
-   Deploy
+### Supabase
+- Proyecto `publicalle` (región East US). Las migraciones y la Edge Function ya están aplicadas.
+- Vercel → Environment Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (solo la llave **anon**).
+- Authentication → desactivar "Allow new users to sign up" (los usuarios se crean desde `/admin/usuarios`).

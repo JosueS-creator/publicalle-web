@@ -8,11 +8,13 @@ Fecha: 28/09/2026 · Estado: base aprobada para construir. **Precios: fuera de a
 |---|---|---|
 | Web pública | **Brief de campaña**: recopila la necesidad del cliente (objetivo, territorio, servicios, fechas, contacto). Sin precios. | Estimación automática (Pricing Engine) |
 | Base de datos | Esquema completo con reglas de acceso (RLS) | — |
-| Admin | Bandeja de solicitudes (siguiente paso) | Campañas, unidades, asignación, validación |
+| Admin | Solicitudes, clientes, campañas, jornadas, unidades, usuarios, validación y evidencias (`/admin`) | Reportes, precios |
 | App del operador | Diseño del modelo de evidencia (este documento) | App nativa (Expo) |
-| Portal del cliente | — | Seguimiento, evidencias validadas y reportes |
+| Portal del cliente | Campañas, jornadas validadas, zonas y km en zonas, evidencias validadas (`/portal`) | Reportes descargables, mapa del recorrido |
 
-Orden de construcción: **modelo → base de datos → brief → admin mínimo + app del operador → portal del cliente → estimación de precios.**
+Orden de construcción: **modelo → base de datos → brief → admin + portal → app del operador → estimación de precios.**
+
+Mientras no exista la app del operador, el admin marca el estado de cada jornada y sube las evidencias (p. ej. fotos recibidas por WhatsApp).
 
 ## 2. Roles
 

@@ -14,6 +14,7 @@ const footerLinks = [
   { label: "Campañas combinadas", href: "#campanas-combinadas" },
   { label: "Cobertura", href: "#cobertura" },
   { label: "Crear una campaña", href: "#contacto" },
+  { label: "Portal de clientes", href: "/entrar" },
 ];
 
 export function Footer() {

@@ -11,5 +11,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/(admin|portal|entrar)(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
