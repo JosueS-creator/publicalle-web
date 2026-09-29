@@ -35,6 +35,9 @@ export function ubicacion(timeout = 15000): Promise<Pos | null> {
   });
 }
 
+/** Colas que se están enviando ahora (compartido por toda la app). */
+const enviandoColas = new Set<string>();
+
 type Punto = { ejecucion_id: string; lat: number; lng: number; precision_m: number; capturado_en: string };
 export type GpsEstado = "apagado" | "buscando" | "activo" | "denegado" | "no_disponible";
 
@@ -69,17 +72,18 @@ export function useGps(ejecucionId: string, activo: boolean) {
   const [precision, setPrecision] = useState<number | null>(null);
   const [pantalla, setPantalla] = useState(false);
   const ultimo = useRef<{ lat: number; lng: number; t: number } | null>(null);
-  const enviando = useRef(false);
 
   const flush = useCallback(async () => {
-    if (enviando.current) return;
+    // Candado GLOBAL por cola: si la pantalla se monta dos veces, no se envía la misma cola en paralelo
+    if (enviandoColas.has(kCola)) return;
     const cola = leer(kCola);
     if (!cola.length) return;
-    enviando.current = true;
+    enviandoColas.add(kCola);
     try {
       for (let i = 0; i < cola.length; i += 200) {
         const lote = cola.slice(i, i + 200);
-        const { error } = await sb.from("gps_puntos").insert(lote);
+        // Idempotente: si un punto ya llegó (reintento tras perder la respuesta), el servidor lo ignora
+        const { error } = await sb.from("gps_puntos").upsert(lote, { onConflict: "ejecucion_id,capturado_en", ignoreDuplicates: true });
         if (error) throw error;
         const resto = leer(kCola).slice(lote.length);
         guardar(kCola, resto);
@@ -89,7 +93,7 @@ export function useGps(ejecucionId: string, activo: boolean) {
     } catch {
       /* sin señal: se reintenta en el próximo ciclo */
     } finally {
-      enviando.current = false;
+      enviandoColas.delete(kCola);
     }
   }, [kCola]);
 

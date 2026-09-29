@@ -29,17 +29,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     };
-    sb.auth.getSession().then(({ data }) => {
-      uidRef.current = data.session?.user.id ?? null;
-      load(data.session);
-    });
+    // Una sola fuente: onAuthStateChange emite INITIAL_SESSION al suscribirse (no se usa además getSession,
+    // que provocaba cargar el perfil dos veces y volver a montar la pantalla).
     const { data: sub } = sb.auth.onAuthStateChange((_event, s) => {
       // Diferido: llamar a Supabase dentro de este callback puede bloquear el candado de sesión (supabase-js)
       // Solo recarga el perfil si cambió el usuario (SIGNED_IN también se emite al volver a la pestaña)
       const uid = s?.user.id ?? null;
       if (uid !== uidRef.current) {
+        const primera = uidRef.current === undefined;
         uidRef.current = uid;
-        setLoading(true);
+        if (!primera) setLoading(true); // en la carga inicial ya está en "cargando"
         setTimeout(() => load(s), 0);
       } else setSession(s);
     });

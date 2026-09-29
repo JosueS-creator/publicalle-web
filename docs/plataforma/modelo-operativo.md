@@ -33,7 +33,7 @@ El GPS continuo solo tiene sentido en MOVE. Cada línea tiene su propio registro
 
 | Línea | Registro obligatorio | Evidencia mínima | Métrica para el cliente |
 |---|---|---|---|
-| **MOVE** (perifoneo, LED, audio móvil, volanteo) | `inicio` → (`pausa`/`reanudacion`)* → `fin` + recorrido GPS | 2 fotos del vehículo en zona | Zonas cubiertas (x de y), km **dentro de las zonas** |
+| **MOVE** (perifoneo, LED, audio móvil, volanteo) | `inicio` → (`pausa`/`reanudacion`)* → `fin` + recorrido GPS | 2 fotos del vehículo en zona | Zonas cubiertas (x de y), km **dentro de las zonas** (sin contar pausas) |
 | **EVENTS** (carpa, audio, animación, promotores) | `llegada` → `salida` en el punto asignado | Foto del montaje + foto de la actividad | Jornadas realizadas, evidencias |
 | **PLACE** (espacios, comercios aliados, pantallas fijas) | `instalacion` y `verificacion` periódica | Foto de la instalación + foto por verificación | Ubicaciones activas, verificaciones |
 
@@ -99,3 +99,10 @@ perfiles (operador) ── (asignados)           └─ incidencias
 - **Frecuencia de verificación en PLACE:** semanal, quincenal o por contrato.
 - **Evidencias mínimas por jornada:** hoy son 2 fotos; confirmar con operación.
 - **Cuenta de Supabase** donde vivirá el proyecto: el plan gratuito permite 2 proyectos activos por cuenta.
+
+
+## Reglas operativas de cobertura
+
+- Los km en zona no cuentan los tramos recorridos durante una pausa.
+- Las zonas contratadas no deben encimarse: un punto solo se asigna a una zona.
+- Contacto público vigente: +504 8740-1299 · ventaspublicalle@gmail.com · Facebook «Publicalle Honduras».

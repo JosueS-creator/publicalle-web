@@ -73,10 +73,10 @@ export function Footer() {
                   href={s.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="grid size-11 place-items-center rounded-full text-brand-white/80 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-brand-green"
+                  className="inline-flex min-h-11 items-center gap-2.5 rounded-full pr-4 pl-3 text-sm text-brand-white/80 ring-1 ring-inset ring-white/15 transition-colors hover:bg-white/10 hover:text-brand-green"
                 >
                   <SocialIcon id={s.id} className="size-[18px]" />
+                  <span className="whitespace-nowrap">{s.label}</span>
                 </a>
               </li>
             ))}

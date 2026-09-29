@@ -42,7 +42,9 @@ export default function OperadorJornada() {
 
   const j = data?.j;
   const linea = (j?.linea ?? "move") as Linea;
-  const gps = useGps(id, !!j && linea === "move" && j.estado === "en_curso");
+  // gpsParado: el GPS se apaga en cuanto se toca Pausar/Finalizar, sin esperar la respuesta del servidor
+  const [gpsParado, setGpsParado] = useState(false);
+  const gps = useGps(id, !!j && linea === "move" && j.estado === "en_curso" && !gpsParado);
   const acc = useAction();
   const foto = useAction();
   const inc = useAction();
@@ -58,8 +60,10 @@ export default function OperadorJornada() {
   const momentoSel = momento || MOMENTOS[linea][0];
 
   /** Registra un evento con la ubicación actual y (opcional) cambia el estado de la jornada. */
-  const registrar = (tipo: Evento, nuevo?: Enum<"estado_ejecucion">) =>
-    acc.run(async () => {
+  const registrar = async (tipo: Evento, nuevo?: Enum<"estado_ejecucion">) => {
+    const detiene = nuevo === "pausada" || nuevo === "finalizada";
+    if (detiene) setGpsParado(true);
+    await acc.run(async () => {
       const p = await ubicacion();
       setAvisoUbic(!p);
       must(
@@ -73,6 +77,9 @@ export default function OperadorJornada() {
       if (nuevo && nuevo !== j.estado) must(await sb.from("ejecuciones").update({ estado: nuevo }).eq("id", id).select("id").single());
       await reload();
     }, `${EVENTO_LABEL[tipo]} registrada.`);
+    // si falló (sin señal), el GPS vuelve a registrar; si funcionó, el nuevo estado ya lo mantiene apagado
+    if (detiene) setGpsParado(false);
+  };
 
   const finalizar = (tipo: Evento) => {
     if (!fotosOk) {

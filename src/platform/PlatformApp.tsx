@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Map as MapIcon, Truck, Users, LayoutGrid } from "lucide-react";
+import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Map as MapIcon, Plus, Truck, Users, LayoutGrid } from "lucide-react";
 import { AuthProvider, esStaff, useAuth } from "./auth";
 import { Shell, type NavItem } from "./Shell";
 import { Loading } from "./ui";
@@ -19,6 +19,7 @@ import Zonas from "./admin/Zonas";
 import Usuarios from "./admin/Usuarios";
 import PortalInicio from "./portal/PortalInicio";
 import PortalCampania from "./portal/PortalCampania";
+import PortalNueva from "./portal/PortalNueva";
 import OperadorInicio from "./operador/OperadorInicio";
 import OperadorJornada from "./operador/OperadorJornada";
 
@@ -29,11 +30,12 @@ const adminNav: NavItem[] = [
   { to: "/admin/jornadas", label: "Jornadas", icon: <CalendarDays /> },
   { to: "/admin/zonas", label: "Zonas", icon: <MapIcon /> },
   { to: "/admin/unidades", label: "Unidades", icon: <Truck /> },
-  { to: "/admin/usuarios", label: "Usuarios", icon: <Users /> },
+  { to: "/admin/usuarios", label: "Usuarios y operadores", icon: <Users /> },
   { to: "/admin/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
 ];
 const portalNav: NavItem[] = [
   { to: "/portal", label: "Mis campañas", icon: <LayoutGrid />, end: true },
+  { to: "/portal/nueva", label: "Nueva campaña", icon: <Plus /> },
   { to: "/portal/cuenta", label: "Mi cuenta", icon: <CircleUser /> },
 ];
 const operadorNav: NavItem[] = [
@@ -83,6 +85,7 @@ export default function PlatformApp() {
           <Route path="/portal" element={<Guard allow="cliente"><Shell nav={portalNav} area="Portal de clientes" /></Guard>}>
             <Route index element={<PortalInicio />} />
             <Route path="campanias/:id" element={<PortalCampania />} />
+            <Route path="nueva" element={<PortalNueva />} />
             <Route path="cuenta" element={<Cuenta />} />
             <Route path="*" element={<Navigate to="/portal" replace />} />
           </Route>

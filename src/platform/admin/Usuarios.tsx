@@ -27,7 +27,8 @@ export default function Usuarios() {
   }, []);
 
   const empresaInicial = params.get("empresa") ?? "";
-  const [f, setF] = useState({ rol: (empresaInicial ? "cliente" : "cliente") as Enum<"rol_usuario">, empresa_id: empresaInicial, nombre: "", correo: "", telefono: "", password: generarClave() });
+  const rolInicial = (["cliente", "operador", "admin", "super_admin"] as const).find((r) => r === params.get("rol")) ?? "cliente";
+  const [f, setF] = useState({ rol: rolInicial as Enum<"rol_usuario">, empresa_id: empresaInicial, nombre: "", correo: "", telefono: "", password: generarClave() });
   const [creado, setCreado] = useState<{ correo: string; password: string } | null>(null);
   const [claveDe, setClaveDe] = useState<{ id: string; password: string } | null>(null);
   const [claveNueva, setClaveNueva] = useState<{ correo: string; password: string } | null>(null);
@@ -38,7 +39,25 @@ export default function Usuarios() {
 
   return (
     <Page title="Usuarios" subtitle="Accesos al portal (clientes), a la app (operadores) y a este panel.">
-      <Card title="Crear usuario">
+      <Card title={`Crear ${f.rol === "cliente" ? "cliente" : f.rol === "operador" ? "operador" : "administrador"}`}>
+        <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Tipo de usuario a crear">
+          {([
+            ["cliente", "Nuevo cliente", "Entra al portal y ve sus campañas"],
+            ["operador", "Nuevo operador", "Registra jornadas, GPS y fotos desde el celular"],
+            ...(soySuper ? ([["admin", "Nuevo administrador", "Maneja este panel"]] as const) : []),
+          ] as const).map(([r, label, ayuda]) => (
+            <button
+              key={r}
+              type="button"
+              aria-pressed={f.rol === r}
+              onClick={() => { setCreado(null); setF({ ...f, rol: r }); }}
+              className={`grid min-h-14 min-w-44 content-center rounded-2xl px-4 py-2 text-left ring-1 ring-inset transition-colors ${f.rol === r ? "bg-brand-green text-brand-blue-dark ring-brand-green" : "ring-white/20 hover:bg-white/[0.06]"}`}
+            >
+              <span className="text-sm font-semibold">{label}</span>
+              <span className={`text-xs ${f.rol === r ? "text-brand-blue-dark/80" : "text-muted"}`}>{ayuda}</span>
+            </button>
+          ))}
+        </div>
         <form
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
           onSubmit={(ev) => {

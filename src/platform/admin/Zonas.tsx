@@ -22,7 +22,7 @@ export default function Zonas() {
   const otras = (data ?? []).filter((z) => z.id !== editId);
 
   return (
-    <Page title="Zonas" subtitle="Contornos de las zonas. El cliente ve el recorrido y los km SOLO dentro de estas zonas.">
+    <Page title="Zonas" subtitle="Contornos de las zonas. El cliente ve el recorrido y los km SOLO dentro de estas zonas. Regla: no dibujes zonas que se encimen (cada km debe pertenecer a una sola zona).">
       <Card title={editId ? `Editar zona: ${nombre}` : "Nueva zona"}>
         <div className="grid gap-4">
           <p className="text-sm text-muted">Haz clic en el mapa para marcar las esquinas de la zona, en orden (mínimo 3). La zona se cierra sola.</p>

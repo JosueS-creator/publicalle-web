@@ -236,7 +236,10 @@ function NuevaJornada({
       <Field label="Hora de inicio"><Input type="time" step={900} value={j.hi} onChange={(e) => setJ({ ...j, hi: e.target.value })} /></Field>
       <Field label="Hora final"><Input type="time" step={900} value={j.hf} onChange={(e) => setJ({ ...j, hf: e.target.value })} /></Field>
       <Field label="Unidad"><Select value={j.unidad} onChange={(e) => setJ({ ...j, unidad: e.target.value })} placeholder="Sin unidad" options={unidades.map((u) => [u.id, u.nombre])} /></Field>
-      <Field label="Operador"><Select value={j.operador} onChange={(e) => setJ({ ...j, operador: e.target.value })} placeholder="Sin operador" options={operadores.map((o) => [o.id, o.nombre])} /></Field>
+      <div className="grid content-start gap-1.5">
+        <Field label="Operador"><Select value={j.operador} onChange={(e) => setJ({ ...j, operador: e.target.value })} placeholder="Sin operador" options={operadores.map((o) => [o.id, o.nombre])} /></Field>
+        {!operadores.length && <Link to="/admin/usuarios?rol=operador" className="text-xs font-semibold text-brand-green-light underline-offset-4 hover:underline">+ Crear operador</Link>}
+      </div>
       {linea === "move" ? (
         <div className="grid gap-1.5 sm:col-span-2 lg:col-span-4">
           <span className="text-sm font-medium text-brand-white/90">Zonas a recorrer</span>
