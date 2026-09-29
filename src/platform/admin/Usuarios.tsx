@@ -181,17 +181,17 @@ export default function Usuarios() {
                         Editar
                       </Btn>
                     )}
-                    {u.rol === "operador" && (
+                    {(u.rol === "operador" || u.rol === "cliente") && (
                       borrarDe === u.id ? (
                         <span className="inline-flex items-center gap-2">
-                          <span className="text-xs text-muted">¿Eliminar?</span>
+                          <span className="text-xs text-muted">{u.rol === "cliente" ? "¿Quitar su acceso al portal?" : "¿Eliminar?"}</span>
                           <Btn variant="danger" className="min-h-8 px-3 text-xs" loading={acc.busy}
                             onClick={() => acc.run(async () => {
                               const r = await adminUsuarios({ accion: "eliminar", id: u.id });
                               if (r.error) throw new Error(r.error);
                               setBorrarDe(null);
                               await reload();
-                              acc.setOk(`Operador «${u.nombre}» eliminado.${r.liberadas ? ` ${r.liberadas} jornada(s) programada(s) quedaron sin operador: reasígnalas.` : ""}`);
+                              acc.setOk(`${u.rol === "cliente" ? "Acceso de" : "Operador"} «${u.nombre}» eliminado.${r.liberadas ? ` ${r.liberadas} jornada(s) programada(s) quedaron sin operador: reasígnalas.` : ""}`);
                             })}>
                             Sí, eliminar
                           </Btn>

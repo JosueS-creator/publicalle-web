@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import { Check, ShieldCheck, Save, Upload, X } from "lucide-react";
 import { useAuth } from "../auth";
@@ -44,7 +44,7 @@ export default function JornadaDetalle() {
     const nombresZonas = [...new Set([...jj.zonas, ...(jj.campanias?.zonas ?? [])])];
     const zonasMapa = nombresZonas.length ? must(await sb.from("zonas").select("nombre, contorno").in("nombre", nombresZonas)) : [];
     const mapa = { zonas: zonasMapa, todo: tramos(puntos), enZona: tramos(must(enZona)), punto: must(punto)[0] ?? null, cobertura: must(cob) };
-    return { mapa, j: jj, ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, gps: { n: puntos.length, km: kmRecorrido(puntos) }, incid: must(incid), unidades: must(unidades), operadores: must(operadores) };
+    return { mapa, pts: puntos, j: jj, ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, gps: { n: puntos.length, km: kmRecorrido(puntos) }, incid: must(incid), unidades: must(unidades), operadores: must(operadores) };
   }, [id]);
 
   const [p, setP] = useState({ fecha: "", hi: "", hf: "", unidad: "", operador: "", punto: "" });
@@ -54,6 +54,41 @@ export default function JornadaDetalle() {
   const est = useAction();
   const sube = useAction();
   const evAcc = useAction();
+
+  // En vivo: mientras la jornada está en curso/pausada, se actualiza SOLO el GPS cada 60 s
+  // (no se recarga la página: así no se borra lo que estés escribiendo en los formularios)
+  const enVivo = data?.j.estado === "en_curso" || data?.j.estado === "pausada";
+  const [vivo, setVivo] = useState<{ pts: { lat: number; lng: number; capturado_en: string }[]; enZona: ReturnType<typeof tramos>; cobertura: NonNullable<typeof data>["mapa"]["cobertura"]; t: Date } | null>(null);
+  const ptsRef = useRef<{ lat: number; lng: number; capturado_en: string }[]>([]);
+  useEffect(() => {
+    if (!data) return;
+    ptsRef.current = data.pts;
+    setVivo(null);
+  }, [data]);
+  useEffect(() => {
+    if (!enVivo) return;
+    let vigente = true;
+    const tick = async () => {
+      const ultimo = ptsRef.current.at(-1)?.capturado_en;
+      let q = sb.from("gps_puntos").select("lat, lng, capturado_en").eq("ejecucion_id", id).order("capturado_en").limit(5000);
+      if (ultimo) q = q.gt("capturado_en", ultimo);
+      const [nuevos, enZona, cob, est] = await Promise.all([
+        q,
+        sb.rpc("recorrido_en_zonas", { p_ejecucion: id }),
+        sb.rpc("cobertura_jornada", { p_ejecucion: id }),
+        sb.from("ejecuciones").select("estado").eq("id", id).single(),
+      ]);
+      if (!vigente || nuevos.error || enZona.error || cob.error || est.error) return; // sin señal: se reintenta en el próximo ciclo
+      if (est.data.estado !== data?.j.estado) return void reload(); // el operador pausó/reanudó/finalizó
+      ptsRef.current = [...ptsRef.current, ...nuevos.data];
+      setVivo({ pts: ptsRef.current, enZona: tramos(enZona.data), cobertura: cob.data, t: new Date() });
+    };
+    const t = setInterval(tick, 60000);
+    return () => {
+      vigente = false;
+      clearInterval(t);
+    };
+  }, [enVivo, id, data?.j.estado, reload]);
 
   useEffect(() => {
     if (!data) return;
@@ -66,6 +101,10 @@ export default function JornadaDetalle() {
   if (loading) return <Page title="Jornada" back="/admin/jornadas"><Loading /></Page>;
   if (!data) return <Page title="Jornada" back="/admin/jornadas"><ErrorBox msg={error} /></Page>;
   const { j } = data;
+  const pts = vivo?.pts ?? data.pts;
+  const mapa = vivo ? { ...data.mapa, todo: tramos(vivo.pts), enZona: vivo.enZona, cobertura: vivo.cobertura } : data.mapa;
+  const gpsInfo = vivo ? { n: vivo.pts.length, km: kmRecorrido(vivo.pts) } : data.gps;
+  const ultimaPos = enVivo ? pts.at(-1) : undefined;
   const cerrada = j.estado === "validada";
   const zonasOpts = [...new Set([...j.zonas, ...(j.campanias?.zonas ?? [])])];
   const evValidadas = data.ev.filter((e) => e.estado === "validada").length;
@@ -150,13 +189,13 @@ export default function JornadaDetalle() {
                     {zonasOpts.length ? <Chips label="Zonas cubiertas" options={zonasOpts} value={val.zonas} onChange={(z) => setVal({ ...val, zonas: z })} /> : <span className="text-xs text-muted">La campaña no tiene zonas contratadas.</span>}
                   </div>
                   <Field label="Km dentro de las zonas"><Input type="number" min={0} step="0.1" inputMode="decimal" value={val.km} onChange={(e) => setVal({ ...val, km: e.target.value })} /></Field>
-                  {data.mapa.cobertura.length > 0 && (
+                  {mapa.cobertura.length > 0 && (
                     <div className="flex flex-wrap items-center gap-3 rounded-xl bg-white/[0.04] px-3 py-2 text-sm ring-1 ring-inset ring-line">
                       <span className="text-muted">
-                        Calculado con GPS: {data.mapa.cobertura.map((c) => `${c.zona} ${Number(c.km).toFixed(2)} km`).join(" · ")}
+                        Calculado con GPS: {mapa.cobertura.map((c) => `${c.zona} ${Number(c.km).toFixed(2)} km`).join(" · ")}
                       </span>
                       <Btn variant="secondary" className="min-h-8 px-3 text-xs"
-                        onClick={() => setVal({ ...val, zonas: data.mapa.cobertura.map((c) => c.zona), km: data.mapa.cobertura.reduce((a, c) => a + Number(c.km), 0).toFixed(2) })}>
+                        onClick={() => setVal({ ...val, zonas: mapa.cobertura.map((c) => c.zona), km: mapa.cobertura.reduce((a, c) => a + Number(c.km), 0).toFixed(2) })}>
                         Usar cálculo
                       </Btn>
                     </div>
@@ -201,34 +240,44 @@ export default function JornadaDetalle() {
         </Card>
       </div>
 
-      {(data.mapa.zonas.length > 0 || data.mapa.todo.length > 0 || data.mapa.punto) && (
+      {(mapa.zonas.length > 0 || mapa.todo.length > 0 || mapa.punto || enVivo) && (
         <Card title="Mapa" actions={<span className="text-xs text-muted">Verde: dentro de zonas (lo ve el cliente) · Gris: fuera de zonas (solo interno)</span>}>
+          {enVivo && (
+            <p className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted">
+              <Badge tone="green">En vivo · se actualiza cada minuto</Badge>
+              {ultimaPos ? <span>Último punto recibido: {fechaHora(ultimaPos.capturado_en)}</span> : <span>Aún no llegan puntos GPS.</span>}
+              {vivo && <span>· Revisado: {vivo.t.toLocaleTimeString("es-HN", { hour: "2-digit", minute: "2-digit" })}</span>}
+            </p>
+          )}
           <Mapa
             alto={380}
             etiqueta="Recorrido de la jornada"
-            zonas={data.mapa.zonas}
-            rutasSecundarias={data.mapa.todo}
-            rutas={data.mapa.enZona}
-            puntos={data.mapa.punto ? [{ lat: data.mapa.punto.lat, lng: data.mapa.punto.lng, label: "Punto registrado" }] : []}
+            zonas={mapa.zonas}
+            rutasSecundarias={mapa.todo}
+            rutas={mapa.enZona}
+            puntos={[
+              ...(mapa.punto ? [{ lat: mapa.punto.lat, lng: mapa.punto.lng, label: "Punto registrado" }] : []),
+              ...(ultimaPos ? [{ lat: ultimaPos.lat, lng: ultimaPos.lng, label: `Última posición · ${fechaHora(ultimaPos.capturado_en)}` }] : []),
+            ]}
           />
         </Card>
       )}
 
       <Card title="Registro del operador (interno)" actions={<Badge tone="amber">No visible para el cliente</Badge>}>
-        {data.t?.inicio || data.gps.n ? (
+        {data.t?.inicio || gpsInfo.n ? (
           <Dl
             items={[
               ["Inicio", fechaHora(data.t?.inicio)],
               ["Fin", fechaHora(data.t?.fin)],
               ["Tiempo efectivo", data.t?.tiempo_efectivo],
               ["Tiempo en pausa", data.t?.tiempo_pausado],
-              ["Recorrido GPS (total)", data.gps.n ? `${data.gps.km.toFixed(1)} km · ${data.gps.n} puntos` : ""],
+              ["Recorrido GPS (total)", gpsInfo.n ? `${gpsInfo.km.toFixed(1)} km · ${gpsInfo.n} puntos` : ""],
             ]}
           />
         ) : (
           <p className="text-sm text-muted">Sin registros del operador todavía.</p>
         )}
-        {j.linea === "move" && data.gps.n > 0 && <p className="mt-3 text-xs text-muted">Referencia para «Km dentro de las zonas»: el total incluye traslados fuera de las zonas.</p>}
+        {j.linea === "move" && gpsInfo.n > 0 && <p className="mt-3 text-xs text-muted">Referencia para «Km dentro de las zonas»: el total incluye traslados fuera de las zonas.</p>}
         {data.incid.length > 0 && (
           <div className="mt-4 grid gap-2">
             <p className="text-sm font-semibold text-[#ffd48a]">Problemas reportados ({data.incid.length})</p>

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Plus, Save, UserPlus } from "lucide-react";
-import { sb } from "../supabase";
+import { Plus, Save, Trash2, UserPlus } from "lucide-react";
+import { useAuth } from "../auth";
+import { adminUsuarios, sb } from "../supabase";
 import { estadoCampania, fecha } from "../labels";
 import { Badge, Btn, BtnLink, Card, Empty, ErrorBox, Estado, Field, Input, Loading, OkBox, Page, Table, Td, must, useAction, useAsync } from "../ui";
 
 export default function ClienteDetalle() {
   const { id = "" } = useParams();
   const nav = useNavigate();
+  const { perfil } = useAuth();
   const { data, error, loading, reload } = useAsync(async () => {
     const [e, camps, users] = await Promise.all([
       sb.from("empresas").select("*").eq("id", id).single(),
@@ -110,6 +112,47 @@ export default function ClienteDetalle() {
           </ul>
         )}
       </Card>
+      {perfil?.rol === "super_admin" && <EliminarCliente id={id} nombre={data.e.nombre} campanias={data.camps.length} usuarios={data.users.length} />}
     </Page>
+  );
+}
+
+function EliminarCliente({ id, nombre, campanias, usuarios }: { id: string; nombre: string; campanias: number; usuarios: number }) {
+  const nav = useNavigate();
+  const [abierto, setAbierto] = useState(false);
+  const [confirma, setConfirma] = useState("");
+  const acc = useAction();
+
+  return (
+    <Card title="Eliminar cliente" className="ring-red-400/25">
+      {!abierto ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted">Borra la empresa, sus {campanias} campaña(s) con jornadas y evidencias, y sus {usuarios} acceso(s) al portal. No se puede deshacer.</p>
+          <Btn variant="danger" icon={<Trash2 className="size-4" aria-hidden />} onClick={() => setAbierto(true)}>Eliminar cliente</Btn>
+        </div>
+      ) : (
+        <form
+          className="grid gap-4"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            acc.run(async () => {
+              if (confirma.trim() !== nombre.trim()) throw new Error("El nombre no coincide.");
+              const r = await adminUsuarios({ accion: "eliminar_empresa", id });
+              if (r.error) throw new Error(r.error);
+              nav("/admin/clientes");
+            });
+          }}
+        >
+          <ErrorBox msg={acc.error} />
+          <Field label={`Para confirmar, escribe el nombre del cliente: ${nombre}`}>
+            <Input value={confirma} onChange={(e) => setConfirma(e.target.value)} autoComplete="off" />
+          </Field>
+          <div className="flex flex-wrap gap-2">
+            <Btn type="submit" variant="danger" loading={acc.busy} disabled={confirma.trim() !== nombre.trim()} icon={<Trash2 className="size-4" aria-hidden />}>Eliminar definitivamente</Btn>
+            <Btn type="button" variant="ghost" onClick={() => { setAbierto(false); setConfirma(""); }}>Cancelar</Btn>
+          </div>
+        </form>
+      )}
+    </Card>
   );
 }
