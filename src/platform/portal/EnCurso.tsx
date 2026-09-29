@@ -33,14 +33,14 @@ export function EnCurso({ campaniaId, zonas }: { campaniaId: string; zonas: Zona
   }, [campaniaId]);
 
   useEffect(() => {
-    const t = setInterval(reload, 120000); // se actualiza sola cada 2 minutos
+    const t = setInterval(reload, 900000); // se actualiza sola cada 15 minutos
     return () => clearInterval(t);
   }, [reload]);
 
   if (!data?.length) return null;
 
   return (
-    <Card title="Jornadas en progreso" actions={<Badge tone="green"><Radio className="mr-1 size-3" aria-hidden /> Se actualiza cada 2 min</Badge>}>
+    <Card title="Jornadas en progreso" actions={<Badge tone="green"><Radio className="mr-1 size-3" aria-hidden /> Se actualiza cada 15 min</Badge>}>
       <div className="grid gap-6">
         {data.map(({ j, rutas, punto, cobertura, ultima }) => {
           const km = cobertura.reduce((a, c) => a + Number(c.km), 0);
