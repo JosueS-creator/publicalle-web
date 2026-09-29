@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, startTransition, Suspense, useEffect, useState } from "react";
 import { Navbar } from "@/components/navigation/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { WhatsAppButton } from "@/components/contact/WhatsAppButton";
@@ -8,6 +8,28 @@ const BelowTheFold = lazy(() => import("@/sections/BelowTheFold"));
 
 /** Narrativa: MARCA → VEHÍCULO → CALLE → RUTA → COBERTURA → DATOS → RESULTADO */
 export default function App() {
+  // Lo de abajo del hero se monta DESPUÉS del primer pintado y como transición (React lo trocea y no bloquea el hilo principal)
+  const [resto, setResto] = useState(false);
+  useEffect(() => {
+    const go = () => startTransition(() => setResto(true));
+    if (window.location.hash) return go(); // enlace directo a una sección (p. ej. /#contacto)
+    const ric = window.requestIdleCallback as ((cb: () => void, o?: { timeout: number }) => number) | undefined;
+    if (ric) {
+      const id = ric(go, { timeout: 1500 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const t = setTimeout(go, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Enlace directo a una sección (/#contacto): bajar cuando la sección ya existe
+  useEffect(() => {
+    if (!resto || !window.location.hash) return;
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 50);
+    return () => clearTimeout(t);
+  }, [resto]);
+
   return (
     <>
       <a
@@ -20,7 +42,7 @@ export default function App() {
       <main id="contenido">
         <Hero />
         <Suspense fallback={<div className="min-h-screen" aria-hidden />}>
-          <BelowTheFold />
+          {resto ? <BelowTheFold /> : <div className="min-h-screen" aria-hidden />}
         </Suspense>
       </main>
       <Footer />

@@ -33,6 +33,7 @@ export default function SolicitudDetalle() {
     setEstado(data.s.estado);
     setNotas(data.s.notas_internas ?? "");
     setEmpresaNombre(data.s.contacto_empresa || data.s.contacto_nombre);
+    if (data.s.empresa_id) setEmpresaId(data.s.empresa_id); // cliente existente (pedido desde su portal)
     setNombreCamp(`${data.s.objetivo} · ${data.s.contacto_empresa || data.s.contacto_nombre}`.slice(0, 120));
   }, [data]);
 

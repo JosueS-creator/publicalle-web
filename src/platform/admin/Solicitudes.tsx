@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { sb } from "../supabase";
 import { estadoSolicitud, fechaHora } from "../labels";
 import type { Enum } from "../database.types";
-import { Card, Empty, ErrorBox, Estado, Loading, Page, Select, Table, Td, must, useAsync } from "../ui";
+import { Badge, Card, Empty, ErrorBox, Estado, Loading, Page, Select, Table, Td, must, useAsync } from "../ui";
 
 type Filtro = "activas" | Enum<"estado_solicitud"> | "todas";
 
@@ -12,7 +12,7 @@ export default function Solicitudes() {
   const { data, error, loading } = useAsync(async () => {
     let q = sb
       .from("solicitudes")
-      .select("id, folio, estado, objetivo, ciudades, contacto_nombre, contacto_empresa, contacto_telefono, creado_en")
+      .select("id, folio, estado, objetivo, ciudades, contacto_nombre, contacto_empresa, contacto_telefono, creado_en, origen, empresas(nombre)")
       .order("creado_en", { ascending: false })
       .limit(300);
     if (filtro === "activas") q = q.in("estado", ["nueva", "en_revision"]);
@@ -62,6 +62,7 @@ export default function Solicitudes() {
                 <Td>
                   <p className="font-medium">{s.contacto_nombre}</p>
                   <p className="text-xs text-muted">{[s.contacto_empresa, s.contacto_telefono].filter(Boolean).join(" · ")}</p>
+                  {s.origen === "portal" && <span className="mt-1 inline-block"><Badge tone="blue">Cliente existente · {s.empresas?.nombre}</Badge></span>}
                 </Td>
                 <Td>{s.objetivo}</Td>
                 <Td className="text-muted">{s.ciudades.join(", ")}</Td>

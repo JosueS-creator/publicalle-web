@@ -157,6 +157,7 @@ export type Database = {
     Functions: {
       convertir_solicitud: { Args: { p_empresa: string | null; p_empresa_nombre: string | null; p_nombre: string; p_solicitud: string }; Returns: string };
       es_staff: { Args: never; Returns: boolean };
+      mis_solicitudes: { Args: never; Returns: { id: string; folio: string; estado: Database["public"]["Enums"]["estado_solicitud"]; objetivo: string; ciudades: string[]; creado_en: string }[] };
       recorrido_en_zonas: { Args: { p_ejecucion: string }; Returns: { lat: number; lng: number; capturado_en: string; zona: string }[] };
       cobertura_jornada: { Args: { p_ejecucion: string }; Returns: { zona: string; km: number; puntos: number; ultima: string }[] };
       punto_jornada: { Args: { p_ejecucion: string }; Returns: { lat: number; lng: number; registrado_en: string }[] };

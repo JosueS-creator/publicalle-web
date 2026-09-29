@@ -105,7 +105,8 @@ export function Hero() {
             ))}
           </h1>
 
-          <m.p {...fadeUp(0.6)} className="mt-6 max-w-[34rem] text-lg leading-relaxed text-brand-white/75 md:text-xl">
+          {/* Sin fundido de opacidad: es el elemento LCP y no debe esperar a la animación */}
+          <m.p initial={reduce ? false : { y: 24 }} animate={{ y: 0 }} transition={{ delay: 0.6, duration: 0.8, ease: EASE_DRIVE }} className="mt-6 max-w-[34rem] text-lg leading-relaxed text-brand-white/75 md:text-xl">
             {hero.lead}
           </m.p>
 

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { m, useReducedMotion, useScroll, useSpring } from "motion/react";
 import { ChartNoAxesColumn, MapPinned, Route, Tent } from "lucide-react";
 import type { FlowNode, LineId } from "@/types";
@@ -68,12 +68,13 @@ export function CampaignFlow({ kicker, name, nodes, result }: Props) {
   const { scrollYProgress } = useScroll({ target: wrapRef, offset: ["start 85%", "center 50%"] });
   const draw = useSpring(scrollYProgress, { stiffness: 90, damping: 26 });
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const wrap = wrapRef.current;
     if (!wrap) return;
     const measure = () => {
-      const W = wrap.getBoundingClientRect();
+      // En pantallas < 1024 px no hay conectores: salir ANTES de medir (evita un reflow forzado de toda la página)
       if (window.innerWidth < 1024) return setLinks([]);
+      const W = wrap.getBoundingClientRect();
       const rel = (el: HTMLElement | null) => {
         const r = el!.getBoundingClientRect();
         return { l: r.left - W.left, r: r.right - W.left, cy: r.top - W.top + r.height / 2 };
@@ -94,7 +95,7 @@ export function CampaignFlow({ kicker, name, nodes, result }: Props) {
       setSize({ w: W.width, h: W.height });
       setLinks(out);
     };
-    measure();
+    // ResizeObserver entrega la primera medición tras el layout (sin forzarlo)
     const ro = new ResizeObserver(measure);
     ro.observe(wrap);
     return () => ro.disconnect();

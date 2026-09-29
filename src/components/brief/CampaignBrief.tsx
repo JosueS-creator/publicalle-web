@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, Check, CircleAlert, CircleCheck, RotateCcw, Send
 import { Button } from "@/components/ui/Button";
 import { WhatsAppIcon } from "@/components/contact/WhatsAppButton";
 import { BRIEF_POR_HORAS, briefBudgets, briefCities, briefDayMoments, briefObjectives, briefSchedules, briefServices } from "@/data/brief";
-import { BRIEF_STEPS, addHours, briefSummary, emptyBrief, submitBrief, validateStep, type BriefData, type BriefErrors, type BriefResult } from "@/lib/brief";
+import { type BriefPortal, BRIEF_STEPS, addHours, briefSummary, emptyBrief, submitBrief, validateStep, type BriefData, type BriefErrors, type BriefResult } from "@/lib/brief";
 import { cn } from "@/lib/cn";
 import { MapaBrief } from "./MapaBrief";
 
@@ -50,11 +50,14 @@ function Err({ id, msg }: { id: string; msg?: string }) {
  * <CampaignBrief /> — brief de campaña en 5 pasos. Solo recopila información (sin precios).
  * Guarda en Supabase (tabla `solicitudes`) si está configurado; si no, prepara el mensaje de WhatsApp.
  */
-export function CampaignBrief() {
+export function CampaignBrief({ portal, inicial }: { portal?: BriefPortal; inicial?: Partial<BriefData> } = {}) {
+  const base: BriefData = { ...emptyBrief, ...inicial };
+  // En la web va bajo un h2 de sección; en el portal, directamente bajo el h1 de la página
+  const H = portal ? "h2" : "h3";
   const uid = useId();
   const reduce = useReducedMotion();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<BriefData>(emptyBrief);
+  const [data, setData] = useState<BriefData>(base);
   const [errors, setErrors] = useState<BriefErrors>({});
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<BriefResult | null>(null);
@@ -89,13 +92,13 @@ export function CampaignBrief() {
     if (Object.keys(e).length) return;
     if (step < last) return setStep(step + 1);
     setBusy(true);
-    const r = await submitBrief(data);
+    const r = await submitBrief(data, portal);
     setBusy(false);
     setResult(r);
   }
 
   const restart = () => {
-    setData(emptyBrief);
+    setData(base);
     setErrors({});
     setResult(null);
     setStep(0);
@@ -108,9 +111,9 @@ export function CampaignBrief() {
           <span className="grid size-14 place-items-center rounded-full bg-brand-green/15 text-brand-green">
             <CircleCheck className="size-7" aria-hidden />
           </span>
-          <h3 ref={headingRef} tabIndex={-1} className="text-3xl font-extrabold tracking-tight [font-stretch:115%] focus:outline-none">
+          <H ref={headingRef} tabIndex={-1} className="text-3xl font-extrabold tracking-tight [font-stretch:115%] focus:outline-none">
             {result.channel === "supabase" ? "¡Recibimos tu solicitud!" : "Tu solicitud está lista"}
-          </h3>
+          </H>
           {result.folio && (
             <p className="rounded-xl bg-white/[0.05] px-4 py-3 ring-1 ring-inset ring-white/15">
               <span className="type-eyebrow block text-[0.62rem] text-brand-white/70">Número de solicitud</span>
@@ -208,9 +211,9 @@ export function CampaignBrief() {
             {step === 0 && (
               <>
                 <legend className="contents">
-                  <h3 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
+                  <H ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
                     ¿Qué quieres lograr?
-                  </h3>
+                  </H>
                 </legend>
                 <div className="flex flex-wrap gap-2" role="group" aria-label="Objetivo" aria-describedby={errors.objetivo ? `${uid}-objetivo-err` : undefined}>
                   {briefObjectives.map((o) => (
@@ -233,9 +236,9 @@ export function CampaignBrief() {
             {step === 1 && (
               <>
                 <legend className="contents">
-                  <h3 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
+                  <H ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
                     ¿Dónde quieres tu campaña?
-                  </h3>
+                  </H>
                 </legend>
                 <div className="grid gap-3">
                   <p className="text-sm text-brand-white/80">Elige una o varias ciudades. Tenemos cobertura en toda Honduras.</p>
@@ -281,9 +284,9 @@ export function CampaignBrief() {
             {step === 2 && (
               <>
                 <legend className="contents">
-                  <h3 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
+                  <H ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
                     ¿Qué quieres incluir?
-                  </h3>
+                  </H>
                 </legend>
                 <p className="-mt-2 text-sm text-brand-white/80">Puedes combinar servicios. Todas las campañas incluyen evidencias de ejecución.</p>
                 {briefServices.map((l) => (
@@ -313,9 +316,9 @@ export function CampaignBrief() {
             {step === 3 && (
               <>
                 <legend className="contents">
-                  <h3 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
+                  <H ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
                     ¿Cuándo?
-                  </h3>
+                  </H>
                 </legend>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="grid gap-2">
@@ -383,9 +386,9 @@ export function CampaignBrief() {
             {step === 4 && (
               <>
                 <legend className="contents">
-                  <h3 ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
+                  <H ref={headingRef} tabIndex={-1} className="text-2xl font-extrabold tracking-tight [font-stretch:112%] focus:outline-none">
                     ¿Cómo te contactamos?
-                  </h3>
+                  </H>
                 </legend>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="grid gap-2">

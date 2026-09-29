@@ -122,7 +122,10 @@ export type BriefResult =
   | { ok: false; message: string; whatsapp: string };
 
 /** Guarda la solicitud en Supabase (si está configurado). Sin backend, prepara el envío por WhatsApp. */
-export async function submitBrief(d: BriefData): Promise<BriefResult> {
+/** Portal: cliente con sesión (la solicitud queda ligada a su empresa). */
+export type BriefPortal = { token: string; empresaId: string };
+
+export async function submitBrief(d: BriefData, portal?: BriefPortal): Promise<BriefResult> {
   if (d.sitio) return { ok: true, whatsapp: whatsappUrl(), channel: "whatsapp" }; // bot: se descarta en silencio
   if (!hasSupabase) return { ok: true, whatsapp: whatsappUrl(whatsappMessage(d)), channel: "whatsapp" };
 
@@ -131,6 +134,7 @@ export async function submitBrief(d: BriefData): Promise<BriefResult> {
   const lineas = [...new Set(d.servicios.map((s) => s.split(":")[0]))];
   const row = {
     id,
+    ...(portal ? { empresa_id: portal.empresaId, origen: "portal" } : {}),
     objetivo: d.objetivo === "Otro" ? d.objetivoOtro.trim() : d.objetivo,
     ciudades: briefCitiesList(d),
     zonas: d.zonas.trim() || null,
@@ -158,7 +162,7 @@ export async function submitBrief(d: BriefData): Promise<BriefResult> {
       method: "POST",
       headers: {
         apikey: supabaseConfig.anonKey,
-        Authorization: `Bearer ${supabaseConfig.anonKey}`,
+        Authorization: `Bearer ${portal?.token ?? supabaseConfig.anonKey}`,
         "Content-Type": "application/json",
         Prefer: "return=minimal",
       },
