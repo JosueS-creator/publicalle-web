@@ -77,6 +77,57 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (b.accion === "editar") {
+      // Datos del perfil de un operador. El correo también cambia en su acceso (login).
+      const id = String(b.id ?? "");
+      const nombre = String(b.nombre ?? "").trim();
+      const telefono = String(b.telefono ?? "").trim() || null;
+      const correo = String(b.correo ?? "").trim().toLowerCase();
+      const { data: objetivo } = await admin.from("perfiles").select("rol, correo").eq("id", id).maybeSingle();
+      if (!objetivo) return json({ error: "Usuario no encontrado." }, 404);
+      if (objetivo.rol !== "operador") return json({ error: "Solo se pueden editar perfiles de operador." }, 403);
+      if (nombre.length < 2) return json({ error: "Escribe el nombre." }, 400);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) return json({ error: "Correo no válido." }, 400);
+      if (correo !== objetivo.correo) {
+        const { error } = await admin.auth.admin.updateUserById(id, { email: correo, email_confirm: true });
+        if (error) {
+          const msg = /already|registered|exists/i.test(error.message) ? "Ya existe un usuario con ese correo." : error.message;
+          return json({ error: msg }, 400);
+        }
+      }
+      const { error } = await admin.from("perfiles").update({ nombre, telefono, correo }).eq("id", id);
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true });
+    }
+
+    if (b.accion === "eliminar") {
+      // Solo operadores, y solo si no tienen historial: la evidencia de campañas nunca se pierde.
+      const id = String(b.id ?? "");
+      const { data: objetivo } = await admin.from("perfiles").select("rol").eq("id", id).maybeSingle();
+      if (!objetivo) return json({ error: "Usuario no encontrado." }, 404);
+      if (objetivo.rol !== "operador") return json({ error: "Solo se pueden eliminar perfiles de operador." }, 403);
+      const cuenta = async (tabla: string, col: string, extra?: (q: any) => any) => {
+        let q = admin.from(tabla).select("id", { count: "exact", head: true }).eq(col, id);
+        if (extra) q = extra(q);
+        const { count, error } = await q;
+        if (error) throw error;
+        return count ?? 0;
+      };
+      const historial =
+        (await cuenta("ejecuciones", "operador_id", (q) => q.neq("estado", "programada"))) +
+        (await cuenta("ejecucion_eventos", "registrado_por")) +
+        (await cuenta("evidencias", "subida_por")) +
+        (await cuenta("incidencias", "registrado_por"));
+      if (historial > 0)
+        return json({ error: "Este operador ya registró jornadas: no se puede eliminar sin perder evidencia. Desactívalo." }, 409);
+      // Jornadas futuras quedan sin operador para reasignarlas
+      const { data: libres, error: e1 } = await admin.from("ejecuciones").update({ operador_id: null }).eq("operador_id", id).select("id");
+      if (e1) return json({ error: e1.message }, 400);
+      const { error } = await admin.auth.admin.deleteUser(id); // borra también su perfil (on delete cascade)
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, liberadas: libres?.length ?? 0 });
+    }
+
     return json({ error: "Acción no válida." }, 400);
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : "Error inesperado." }, 500);

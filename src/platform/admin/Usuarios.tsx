@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
-import { KeyRound, UserPlus } from "lucide-react";
+import { KeyRound, Pencil, Trash2, UserPlus } from "lucide-react";
 import { useAuth } from "../auth";
 import { adminUsuarios, sb } from "../supabase";
 import { rolLabel } from "../labels";
@@ -32,6 +32,8 @@ export default function Usuarios() {
   const [creado, setCreado] = useState<{ correo: string; password: string } | null>(null);
   const [claveDe, setClaveDe] = useState<{ id: string; password: string } | null>(null);
   const [claveNueva, setClaveNueva] = useState<{ correo: string; password: string } | null>(null);
+  const [borrarDe, setBorrarDe] = useState<string | null>(null);
+  const [edita, setEdita] = useState<{ id: string; nombre: string; correo: string; telefono: string } | null>(null);
   const crear = useAction();
   const acc = useAction();
 
@@ -115,8 +117,32 @@ export default function Usuarios() {
               return (
                 <tr key={u.id}>
                   <Td>
-                    <p className="font-semibold">{u.nombre || "—"}</p>
-                    <p className="text-xs text-muted">{u.correo}</p>
+                    {edita?.id === u.id ? (
+                      <div className="grid min-w-56 gap-2">
+                        <Input aria-label="Nombre" className="py-1.5 text-sm" value={edita.nombre} onChange={(e) => setEdita({ ...edita, nombre: e.target.value })} />
+                        <Input aria-label="Correo" type="email" className="py-1.5 text-sm" value={edita.correo} onChange={(e) => setEdita({ ...edita, correo: e.target.value })} />
+                        <Input aria-label="Teléfono" type="tel" placeholder="Teléfono (opcional)" className="py-1.5 text-sm" value={edita.telefono} onChange={(e) => setEdita({ ...edita, telefono: e.target.value })} />
+                        <span className="flex gap-2">
+                          <Btn className="min-h-8 px-3 text-xs" loading={acc.busy}
+                            onClick={() => acc.run(async () => {
+                              const r = await adminUsuarios({ accion: "editar", ...edita });
+                              if (r.error) throw new Error(r.error);
+                              setEdita(null);
+                              await reload();
+                            }, "Perfil actualizado.")}>
+                            Guardar
+                          </Btn>
+                          <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setEdita(null)}>Cancelar</Btn>
+                        </span>
+                        {edita.correo.trim().toLowerCase() !== (u.correo ?? "") && <p className="text-xs text-muted">Con el correo nuevo entrará a la app; su contraseña no cambia.</p>}
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-semibold">{u.nombre || "—"}</p>
+                        <p className="text-xs text-muted">{u.correo}</p>
+                        {u.rol === "operador" && u.telefono && <p className="text-xs text-muted">{u.telefono}</p>}
+                      </>
+                    )}
                   </Td>
                   <Td>{rolLabel[u.rol]}</Td>
                   <Td className="text-muted">{u.empresas?.nombre ?? "—"}</Td>
@@ -148,6 +174,34 @@ export default function Usuarios() {
                         onClick={() => acc.run(async () => { must(await sb.from("perfiles").update({ activo: !u.activo }).eq("id", u.id).select("id").single()); await reload(); })}>
                         {u.activo ? "Desactivar" : "Activar"}
                       </Btn>
+                    )}
+                    {u.rol === "operador" && edita?.id !== u.id && (
+                      <Btn variant="ghost" className="min-h-8 px-3 text-xs" icon={<Pencil className="size-3.5" aria-hidden />}
+                        onClick={() => setEdita({ id: u.id, nombre: u.nombre ?? "", correo: u.correo ?? "", telefono: u.telefono ?? "" })}>
+                        Editar
+                      </Btn>
+                    )}
+                    {u.rol === "operador" && (
+                      borrarDe === u.id ? (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-xs text-muted">¿Eliminar?</span>
+                          <Btn variant="danger" className="min-h-8 px-3 text-xs" loading={acc.busy}
+                            onClick={() => acc.run(async () => {
+                              const r = await adminUsuarios({ accion: "eliminar", id: u.id });
+                              if (r.error) throw new Error(r.error);
+                              setBorrarDe(null);
+                              await reload();
+                              acc.setOk(`Operador «${u.nombre}» eliminado.${r.liberadas ? ` ${r.liberadas} jornada(s) programada(s) quedaron sin operador: reasígnalas.` : ""}`);
+                            })}>
+                            Sí, eliminar
+                          </Btn>
+                          <Btn variant="ghost" className="min-h-8 px-2 text-xs" onClick={() => setBorrarDe(null)}>No</Btn>
+                        </span>
+                      ) : (
+                        <Btn variant="ghost" className="min-h-8 px-3 text-xs text-red-300" icon={<Trash2 className="size-3.5" aria-hidden />} onClick={() => setBorrarDe(u.id)}>
+                          Eliminar
+                        </Btn>
+                      )
                     )}
                   </Td>
                 </tr>

@@ -20,7 +20,7 @@ export function errorMsg(e: unknown): string {
 }
 
 /** Llama a la Edge Function de usuarios (crear / cambiar contraseña). */
-export async function adminUsuarios(body: Record<string, unknown>): Promise<{ ok?: boolean; id?: string; error?: string }> {
+export async function adminUsuarios(body: Record<string, unknown>): Promise<{ ok?: boolean; id?: string; liberadas?: number; error?: string }> {
   const { data, error } = await sb.functions.invoke("admin-usuarios", { body });
   if (error) {
     try {
