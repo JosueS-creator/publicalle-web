@@ -2,15 +2,18 @@ import { hasSupabase, supabaseConfig } from "@/config/backend";
 import { whatsappUrl } from "./whatsapp";
 
 /**
- * PubliEscuela — servicio de Publicalle MOVE.
- * Recorridos de 2 h/día por los barrios y colonias alrededor de las escuelas que elige el cliente.
+ * PubliEscuela — servicio de Publicalle MOVE para escuelas y colegios.
+ * Una unidad móvil con pantalla LED y audio recorre los barrios y colonias alrededor de la escuela
+ * 2 h/día, con paradas en esquinas y calles concurridas, y reproduce en bucle un video de 15 s
+ * de los servicios de la escuela (el video lo crea Publicalle y está incluido). Monitoreo por GPS.
  * Solo hay precio definido para el volanteo; el recorrido se cotiza.
  */
 export const PE = {
   horasDia: 2,
+  videoSeg: 15,
   duraciones: [7, 14, 21, 30] as const,
   radios: [0.5, 1, 1.5] as const,
-  maxEscuelas: 5,
+  maxEscuelas: 5, // la escuela + sus otras sedes
   volanteo: { precio: 5000, incluye: ["Hasta 5,000 volantes", "Blanco y negro", "Tamaño 1/4 de página", "Impresión", "Distribución en la zona"] },
 } as const;
 
@@ -30,6 +33,11 @@ export type PEContacto = { nombre: string; empresa: string; telefono: string; co
 
 export const emptyConfig: PEConfig = { escuelas: [], dias: 7, inicio: "", franjaId: "", volanteo: false, volanteoExtra: false };
 export const emptyContacto: PEContacto = { nombre: "", empresa: "", telefono: "", correo: "", comentarios: "", sitio: "" };
+
+/** Reproducciones del video: corre en bucle las 2 h (en movimiento y en las paradas). */
+export const reproduccionesDia = () => (PE.horasDia * 3600) / PE.videoSeg;
+export const reproducciones = (dias: number) => reproduccionesDia() * dias;
+export const miles = (n: number) => n.toLocaleString("en-US");
 
 export const lempiras = (n: number) => `L${n.toLocaleString("en-US")}`;
 export const hhmm = (t: string) => t.slice(0, 5);
@@ -60,6 +68,16 @@ export async function proximoInicio(franjaId: string, dias: number, desde: strin
 
 /** Recorrido de demostración alrededor de una escuela (un bucle irregular dentro del radio). */
 export function rutaDemo(e: Escuela) {
+  return recorrido(e).ruta;
+}
+
+/** Ruta de demostración + puntos de parada (esquinas y calles concurridas). */
+export function recorrido(e: Escuela) {
+  const ruta = puntosRuta(e);
+  return { ruta, paradas: [ruta[4], ruta[11], ruta[18], ruta[25]] };
+}
+
+function puntosRuta(e: Escuela) {
   const pts: { lat: number; lng: number }[] = [];
   const n = 28;
   const seed = Math.abs(Math.sin(e.lat * 1000 + e.lng * 1000));
@@ -88,9 +106,12 @@ export function resumen(c: PEConfig, f: Franja | undefined) {
   const inv = inversion(c);
   return [
     { label: "Ciudad", value: "Tegucigalpa" },
-    { label: "Escuelas", value: c.escuelas.map((e) => `${e.nombre} (${e.radioKm} km alrededor)`).join(" · ") || "—" },
+    { label: "Escuela", value: c.escuelas.map((e) => `${e.nombre} (${e.radioKm} km alrededor)`).join(" · ") || "—" },
+    { label: "Unidad", value: "Pantalla LED + audio" },
+    { label: "Video", value: `${PE.videoSeg} s, incluido` },
     { label: "Duración", value: `${c.dias} días de recorrido` },
     { label: "Recorrido", value: `${PE.horasDia} horas/día${f ? ` · ${f.nombre} ${hhmm(f.hora_inicio)}–${hhmm(f.hora_fin)}` : ""}` },
+    { label: "Reproducciones", value: `${miles(reproducciones(c.dias))} (${miles(reproduccionesDia())}/día)` },
     { label: "Fechas", value: f && f.fechas.length ? `${diaCorto(f.fechas[0])} → ${diaCorto(f.fechas[f.fechas.length - 1])}` : c.inicio ? `Desde ${diaCorto(c.inicio)}` : "—" },
     { label: "Volanteo", value: c.volanteo ? `Sí · ${inv.volanteo}` : "No" },
     { label: "Inversión", value: "Solicitar cotización" },
@@ -99,7 +120,7 @@ export function resumen(c: PEConfig, f: Franja | undefined) {
 
 export function validar(c: PEConfig, k: PEContacto, f: Franja | undefined) {
   const e: Record<string, string> = {};
-  if (!c.escuelas.length) e.escuelas = "Agrega al menos una escuela en el mapa.";
+  if (!c.escuelas.length) e.escuelas = "Ubica tu escuela en el mapa.";
   if (!c.inicio) e.inicio = "Elige la fecha de inicio.";
   if (!c.franjaId) e.franja = "Elige un horario.";
   else if (f && f.sin_cupo.length) e.franja = "Ese horario no tiene cupo en todas las fechas. Elige otro o cambia la fecha.";
@@ -111,7 +132,7 @@ export function validar(c: PEConfig, k: PEContacto, f: Franja | undefined) {
 
 function texto(c: PEConfig, k: PEContacto, f: Franja | undefined, folio?: string) {
   return [
-    `Hola Publicalle, quiero una campaña PubliEscuela.${folio ? ` (Solicitud ${folio})` : ""}`,
+    `Hola Publicalle, quiero una campaña PubliEscuela para mi escuela.${folio ? ` (Solicitud ${folio})` : ""}`,
     ...resumen(c, f).map((r) => `• ${r.label}: ${r.value}`),
     ...(k.comentarios.trim() ? [`• Comentarios: ${k.comentarios.trim()}`] : []),
     `• Contacto: ${k.nombre}${k.empresa ? ` — ${k.empresa}` : ""} · ${k.telefono}${k.correo ? ` · ${k.correo}` : ""}`,
@@ -129,8 +150,9 @@ export async function enviar(c: PEConfig, k: PEContacto, f: Franja | undefined):
   const id = crypto.randomUUID();
   const folio = id.replace(/-/g, "").slice(0, 8).toUpperCase();
   const e0 = c.escuelas[0];
-  const servicios = ["move:publiescuela", "move:perifoneo", ...(c.volanteo ? ["move:volanteo"] : [])];
+  const servicios = ["move:publiescuela", "move:pantalla_led", "move:perifoneo", "move:creacion_spots", ...(c.volanteo ? ["move:volanteo"] : [])];
   const extra = [
+    `Video de ${PE.videoSeg} s de los servicios de la escuela (incluido), en bucle: ${miles(reproducciones(c.dias))} reproducciones en ${c.dias} días.`,
     c.volanteo ? (c.volanteoExtra ? "Volanteo: más de 5,000 volantes (cotizar)" : `Volanteo: hasta 5,000 volantes · ${lempiras(PE.volanteo.precio)}`) : "",
     k.comentarios.trim(),
   ].filter(Boolean).join("\n");

@@ -9,7 +9,7 @@ import { hasSupabase } from "@/config/backend";
 import { cn } from "@/lib/cn";
 import { reveal, viewportOnce } from "@/lib/motion";
 import {
-  PE, disponibilidad, diaCorto, emptyConfig, emptyContacto, enviar, hhmm, lempiras, mananaHN, proximoInicio, resumen, rutaDemo, validar,
+  PE, disponibilidad, diaCorto, emptyConfig, emptyContacto, enviar, hhmm, lempiras, mananaHN, miles, proximoInicio, recorrido, reproducciones, reproduccionesDia, resumen, validar,
   type Escuela, type Franja, type PEConfig, type PEContacto, type PEResult,
 } from "@/lib/publiescuela";
 
@@ -68,13 +68,15 @@ export function Configurador() {
   // Mapa: radios, marcadores y recorrido de demostración (memo: el vehículo no se reinicia en cada render)
   const circulos = useMemo(() => c.escuelas.map((e) => ({ lat: e.lat, lng: e.lng, km: e.radioKm, label: `${e.nombre} · ${e.radioKm} km` })), [c.escuelas]);
   const puntos = useMemo(() => c.escuelas.map((e) => ({ lat: e.lat, lng: e.lng, label: e.nombre })), [c.escuelas]);
-  const rutas = useMemo(() => c.escuelas.map(rutaDemo), [c.escuelas]);
+  const recs = useMemo(() => c.escuelas.map(recorrido), [c.escuelas]);
+  const rutas = useMemo(() => recs.map((r) => r.ruta), [recs]);
+  const paradas = useMemo(() => recs.flatMap((r) => r.paradas), [recs]);
 
   const agregar = (lat: number, lng: number, nombre?: string) => {
-    if (c.escuelas.length >= PE.maxEscuelas) return setAviso(`Puedes elegir hasta ${PE.maxEscuelas} escuelas por campaña. Si necesitas más, cuéntanos en los comentarios.`);
+    if (c.escuelas.length >= PE.maxEscuelas) return setAviso(`Puedes agregar hasta ${PE.maxEscuelas} sedes por campaña. Si necesitas más, cuéntanos en los comentarios.`);
     if (lat < 13.9 || lat > 14.25 || lng < -87.4 || lng > -87.0) return setAviso("PubliEscuela opera en Tegucigalpa y Comayagüela. Elige una escuela dentro de la ciudad.");
     setAviso(null);
-    const e: Escuela = { id: crypto.randomUUID(), nombre: (nombre ?? `Escuela ${c.escuelas.length + 1}`).slice(0, 80), lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), radioKm: 1 };
+    const e: Escuela = { id: crypto.randomUUID(), nombre: (nombre ?? (c.escuelas.length ? `Sede ${c.escuelas.length + 1}` : "Mi escuela")).slice(0, 80), lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)), radioKm: 1 };
     set({ escuelas: [...c.escuelas, e] });
     setErrores((x) => ({ ...x, escuelas: "" }));
   };
@@ -150,13 +152,13 @@ export function Configurador() {
     <form onSubmit={solicitar} noValidate className="grid gap-8 lg:grid-cols-12 lg:items-start">
       <div className="grid gap-6 lg:col-span-8">
         {/* 01 — Escuelas */}
-        <Paso n="01" titulo="Elige las escuelas y el área alrededor" id="pe-escuelas">
+        <Paso n="01" titulo="Ubica tu escuela y el área alrededor" id="pe-escuelas">
           <p className="text-muted">
-            Busca la escuela o tócala en el mapa. Luego elige cuántos kilómetros alrededor recorremos: los barrios y colonias de las familias que la visitan.
+            Busca tu escuela o tócala en el mapa. Luego elige cuántos kilómetros alrededor recorre la unidad: los barrios y colonias de las familias que quieres atraer. Si tienes otras sedes, agrégalas igual.
           </p>
           <div className="flex gap-2" role="search">
             <label htmlFor="pe-buscar" className="sr-only">Buscar escuela</label>
-            <input id="pe-buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscar(); } }} placeholder="Nombre de la escuela o colonia" className={cn(inputCls, "min-h-12 rounded-full py-3")} />
+            <input id="pe-buscar" value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscar(); } }} placeholder="Nombre de tu escuela o colonia" className={cn(inputCls, "min-h-12 rounded-full py-3")} />
             <Button type="button" onClick={buscar} loading={buscando} className="shrink-0" icon={!buscando ? <Search className="size-4" aria-hidden /> : undefined}>
               Buscar
             </Button>
@@ -174,9 +176,9 @@ export function Configurador() {
             </ul>
           )}
           {aviso && <p className="text-sm text-[#ffd48a]" role="status">{aviso}</p>}
-          <Mapa alto={400} etiqueta="Mapa de Tegucigalpa: escuelas elegidas y recorrido" onClick={(p) => agregar(p.lat, p.lng)} circulos={circulos} puntos={puntos} rutas={rutas} vehiculo />
+          <Mapa alto={400} etiqueta="Mapa de Tegucigalpa: escuelas elegidas y recorrido" onClick={(p) => agregar(p.lat, p.lng)} circulos={circulos} puntos={puntos} rutas={rutas} paradas={paradas} vehiculo />
           <p className="flex items-center gap-2 text-xs text-muted">
-            <Info className="size-3.5 shrink-0" aria-hidden /> La línea del mapa es una demostración del recorrido. La ruta real se define con el equipo de Publicalle según las calles de la zona.
+            <Info className="size-3.5 shrink-0" aria-hidden /> La línea del mapa es una demostración del recorrido; los puntos amarillos, las paradas en esquinas y calles concurridas. La ruta real se define con el equipo de Publicalle según las calles de la zona.
           </p>
           {c.escuelas.length > 0 && (
             <ul className="grid gap-3">
@@ -217,6 +219,9 @@ export function Configurador() {
               </Chip>
             ))}
           </div>
+          <p className="rounded-2xl bg-white/[0.03] px-4 py-3 text-sm ring-1 ring-inset ring-line">
+            Tu video de {PE.videoSeg} s se reproduce en bucle: <b className="text-brand-white">{miles(reproduccionesDia())} veces por día</b> · <b className="text-brand-green-light">{miles(reproducciones(c.dias))} en {c.dias} días</b>.
+          </p>
           <p className="text-sm text-muted">Mínimo {PE.duraciones[0]} días. Cuentan los días de clases del horario que elijas (normalmente de lunes a viernes, sin feriados).</p>
           <div className="grid max-w-xs gap-2">
             <Label htmlFor="pe-fecha">Fecha de inicio</Label>
@@ -328,7 +333,7 @@ export function Configurador() {
             </div>
             <div className="grid gap-2 sm:col-span-2">
               <Label htmlFor="pe-coment" optional>Comentarios</Label>
-              <textarea id="pe-coment" rows={3} maxLength={800} value={k.comentarios} onChange={(e) => setK({ ...k, comentarios: e.target.value })} className={inputCls} placeholder="Mensaje del audio, producto, público al que quieres llegar…" />
+              <textarea id="pe-coment" rows={3} maxLength={800} value={k.comentarios} onChange={(e) => setK({ ...k, comentarios: e.target.value })} className={inputCls} placeholder="Qué quieres destacar en el video: matrícula, niveles, horarios, becas, actividades…" />
             </div>
             {/* Trampa anti-spam (invisible para personas) */}
             <input type="text" tabIndex={-1} autoComplete="off" value={k.sitio} onChange={(e) => setK({ ...k, sitio: e.target.value })} className="hidden" aria-hidden />

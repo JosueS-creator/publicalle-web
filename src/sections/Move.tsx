@@ -61,7 +61,7 @@ export function Move() {
             </span>
             <span className="grid flex-1 gap-0.5">
               <span className="font-semibold">PubliEscuela</span>
-              <span className="text-sm text-muted">Recorridos de 2 h/día alrededor de las escuelas que elijas.</span>
+              <span className="text-sm text-muted">Pantalla LED + audio alrededor de tu escuela, 2 h/día.</span>
             </span>
             <ArrowRight className="size-5 text-brand-green transition-transform group-hover:translate-x-1" aria-hidden />
           </a>

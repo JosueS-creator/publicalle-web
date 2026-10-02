@@ -23,6 +23,7 @@ export default function Mapa({
   circulo,
   circulos = [],
   vehiculo = false,
+  paradas = [],
   seleccionadas,
   onZonaClick,
   centrar,
@@ -43,6 +44,8 @@ export default function Mapa({
   circulos?: (LatLng & { km: number; label?: string })[];
   /** Un vehículo recorre `rutas` en bucle (demostración de movimiento). */
   vehiculo?: boolean;
+  /** Puntos de parada sobre `rutas`: se marcan y el vehículo se detiene un momento en cada uno. */
+  paradas?: LatLng[];
   /** Zonas resaltadas (elegidas) y clic sobre una zona. */
   seleccionadas?: string[];
   onZonaClick?: (nombre: string) => void;
@@ -121,6 +124,9 @@ export default function Mapa({
       else if (t.length === 1) L.circleMarker(t[0], { radius: 4, color: VERDE, fillOpacity: 1 }).addTo(g);
       t.forEach((p) => b.extend(p));
     });
+    paradas.forEach((p) => {
+      L.circleMarker(p, { radius: 6, color: "#ffd48a", weight: 2, fillColor: "#050a17", fillOpacity: 1 }).bindTooltip("Parada: esquina o calle concurrida").addTo(g);
+    });
     puntos.forEach((p) => {
       const c = L.circleMarker(p, { radius: 8, color: "#fff", weight: 2, fillColor: VERDE, fillOpacity: 1 });
       if (p.label) c.bindTooltip(p.label);
@@ -150,7 +156,7 @@ export default function Mapa({
       m.fitBounds(b.pad(0.15), { maxZoom: 16 });
       ajustado.current = true;
     }
-  }, [zonas, rutas, rutasSecundarias, puntos, borrador, onClick, circulo, circulos, seleccionadas, pin, onPinMove]);
+  }, [zonas, rutas, rutasSecundarias, puntos, borrador, onClick, circulo, circulos, paradas, seleccionadas, pin, onPinMove]);
 
   // Varios radios: encuadrarlos todos cuando cambian (agregar o quitar una escuela, cambiar el radio)
   const firma = circulos.map((c) => `${c.lat},${c.lng},${c.km}`).join("|");
@@ -173,19 +179,25 @@ export default function Mapa({
       iconAnchor: [9, 9],
     });
     const mk = L.marker(camino[0], { icon, interactive: false, keyboard: false }).addTo(m);
-    // largo acumulado para avanzar a velocidad constante
-    const acc = [0];
-    for (let i = 1; i < camino.length; i++) acc.push(acc[i - 1] + m.distance(camino[i - 1], camino[i]));
-    const total = acc[acc.length - 1] || 1;
-    const vuelta = Math.min(40000, Math.max(9000, total * 4)); // ms por vuelta
+    // Línea de tiempo: tramos a velocidad constante + pausas en las paradas
+    const total = camino.slice(1).reduce((s, p, i) => s + m.distance(camino[i], p), 0) || 1;
+    const msPorM = Math.min(40000, Math.max(9000, total * 4)) / total;
+    const PAUSA = 1600;
+    const esParada = (p: LatLng) => paradas.some((q) => q.lat === p.lat && q.lng === p.lng);
+    const pasos: { a: LatLng; z: LatLng; t: number }[] = [];
+    for (let i = 1; i < camino.length; i++) {
+      pasos.push({ a: camino[i - 1], z: camino[i], t: m.distance(camino[i - 1], camino[i]) * msPorM });
+      if (esParada(camino[i])) pasos.push({ a: camino[i], z: camino[i], t: PAUSA });
+    }
+    const ciclo = pasos.reduce((s, x) => s + x.t, 0) || 1;
     let raf = 0;
     const t0 = performance.now();
     const paso = (t: number) => {
-      const d = (((t - t0) % vuelta) / vuelta) * total;
-      let i = 1;
-      while (i < acc.length - 1 && acc[i] < d) i++;
-      const f = (d - acc[i - 1]) / ((acc[i] - acc[i - 1]) || 1);
-      const a = camino[i - 1], z = camino[i];
+      let r = (t - t0) % ciclo;
+      let k = 0;
+      while (k < pasos.length - 1 && r > pasos[k].t) r -= pasos[k++].t;
+      const { a, z, t: dur } = pasos[k];
+      const f = dur ? Math.min(1, r / dur) : 0;
       mk.setLatLng([a.lat + (z.lat - a.lat) * f, a.lng + (z.lng - a.lng) * f]);
       raf = requestAnimationFrame(paso);
     };
@@ -194,7 +206,7 @@ export default function Mapa({
       cancelAnimationFrame(raf);
       mk.remove();
     };
-  }, [rutas, vehiculo]);
+  }, [rutas, vehiculo, paradas]);
 
   useEffect(() => {
     if (!map.current) return;
