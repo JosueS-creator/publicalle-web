@@ -6,6 +6,7 @@ def run(role, uid, sql):
     r=subprocess.run(['su','postgres','-c',f'psql -X -q -t -A -v ON_ERROR_STOP=1 -d pctest'],input=pre+sql,capture_output=True,text=True)
     out=[l for l in r.stdout.strip().splitlines() if l.strip()]
     return r.returncode==0, (out[-1] if out else ''), r.stderr.strip().splitlines()[-1:] if r.stderr else ''
+AF="(select id from agenda_franjas where nombre='Entrada de la mañana')"; AD="(hoy_hn() + (8 - extract(isodow from hoy_hn())::int))"
 SOL="insert into solicitudes (objetivo,ciudades,contacto_nombre,contacto_telefono{extra}) values ('Lanzamiento','{{Tegucigalpa}}','Ana','+504 9999-9999'{val});"
 tests=[
  ("Público crea solicitud", 'anon',None, SOL.format(extra='',val=''), True, None),
@@ -83,6 +84,27 @@ tests=[
  ("Cliente NO borra archivos en Storage", 'authenticated',C1, "with d as (delete from storage.objects returning 1) select count(*) from d;", True, '0'),
  ("Admin borra campaña (jornadas y evidencias en cascada)", 'authenticated',ADMIN, "delete from campanias where id='c0000000-0000-0000-0000-000000000001'; select (select count(*) from ejecuciones where campania_id='c0000000-0000-0000-0000-000000000001')::text || '/' || (select count(*) from evidencias where ejecucion_id='d0000000-0000-0000-0000-000000000003');", True, '0/0'),
  ("Admin borra archivos de evidencias en Storage", 'authenticated',ADMIN, "with d as (delete from storage.objects where bucket_id='evidencias' returning 1) select (count(*)>0)::text from d;", True, 'true'),
+ # ---------- PubliEscuela · agenda ----------
+ ("Agenda: público ve las franjas activas", 'anon',None, "select count(*) from agenda_franjas;", True, '3'),
+ ("Agenda: público NO ve los bloqueos", 'authenticated',ADMIN, "insert into agenda_bloqueos (fecha,motivo) values ('2030-01-01','Prueba'); set role anon; select count(*) from agenda_bloqueos;", True, '0'),
+ ("Agenda: 7 días de recorrido disponibles", 'anon',None, f"select cardinality(fechas)||'/'||cardinality(sin_cupo) from agenda_disponibilidad({AD},7) where nombre='Entrada de la mañana';", True, '7/0'),
+ ("Agenda: solo días de la franja (lunes a viernes)", 'anon',None, f"select bool_and(extract(isodow from d) between 1 and 5)::text from agenda_disponibilidad({AD},7), unnest(fechas) d where nombre='Entrada de la mañana';", True, 'true'),
+ ("Agenda: público solicita PubliEscuela y aparta el cupo", 'anon',None, f"insert into solicitudes (objetivo,ciudades,contacto_nombre,contacto_telefono,franja_id,fecha_inicio,dias_recorrido,escuelas) values ('PubliEscuela','{{Tegucigalpa}}','Ana','+504 9999-9999',{AF},{AD},7,'[{{\"nombre\":\"Escuela X\",\"lat\":14.08,\"lng\":-87.2,\"radio_km\":1}}]');", True, None),
+ ("Agenda: el servidor calcula las 7 fechas y la fecha final", 'postgres',None, f"select cardinality(fechas_reserva)||'/'||(fecha_fin - fecha_inicio) from solicitudes where franja_id is not null;", True, '7/8'),
+ ("Agenda: segunda solicitud en el mismo horario sin cupo → rechazada", 'anon',None, f"insert into solicitudes (objetivo,ciudades,contacto_nombre,contacto_telefono,franja_id,fecha_inicio,dias_recorrido) values ('PubliEscuela','{{Tegucigalpa}}','Beto','+504 9999-9998',{AF},{AD},7);", False, None),
+ ("Agenda: la disponibilidad ya muestra el horario ocupado", 'anon',None, f"select cardinality(sin_cupo)::text from agenda_disponibilidad({AD},7) where nombre='Entrada de la mañana';", True, '7'),
+ ("Agenda: otra franja sigue libre", 'anon',None, f"select cardinality(sin_cupo)::text from agenda_disponibilidad({AD},7) where nombre='Salida de la tarde';", True, '0'),
+ ("Agenda: sugiere la próxima fecha de inicio libre", 'anon',None, f"select (agenda_proximo_inicio({AF},7,{AD}) = {AD}+9)::text;", True, 'true'),
+ ("Agenda: un día bloqueado se salta", 'authenticated',ADMIN, f"insert into agenda_bloqueos (fecha,motivo) values ({AD}+9,'Feriado'); select ((select fechas[1] from agenda_disponibilidad({AD}+9,1) where nombre='Salida de la tarde') = {AD}+10)::text;", True, 'true'),
+ ("Agenda: público NO puede inventar fechas apartadas", 'anon',None, SOL.format(extra=',fechas_reserva',val=",'{2030-01-01}'") + " select 1;", True, None),
+ ("Agenda: …el servidor las ignora", 'postgres',None, "select count(*) from solicitudes where franja_id is null and fechas_reserva <> '{}';", True, '0'),
+ ("Agenda: no se puede empezar hoy", 'anon',None, f"insert into solicitudes (objetivo,ciudades,contacto_nombre,contacto_telefono,franja_id,fecha_inicio,dias_recorrido) values ('PubliEscuela','{{Tegucigalpa}}','Ana','+504 9999-9999',{AF},hoy_hn(),7);", False, None),
+ ("Agenda: público NO ve la ocupación ni quién reservó", 'anon',None, f"select count(*) from agenda_ocupacion({AD},{AD}+6);", False, None),
+ ("Agenda: cliente NO ve la ocupación", 'authenticated',C1, f"select count(*) from agenda_ocupacion({AD},{AD}+6);", False, None),
+ ("Agenda: admin ve la ocupación con la reserva", 'authenticated',ADMIN, f"select jsonb_array_length(reservas)::text from agenda_ocupacion({AD},{AD}) o join agenda_franjas f on f.id=o.franja_id where f.nombre='Entrada de la mañana';", True, '1'),
+ ("Agenda: descartar la solicitud libera el cupo", 'authenticated',ADMIN, f"update solicitudes set estado='descartada' where franja_id={AF}; select cardinality(sin_cupo)::text from agenda_disponibilidad({AD},7) where nombre='Entrada de la mañana';", True, '0'),
+ ("Agenda: un vehículo ya programado en ese horario ocupa el cupo", 'authenticated',ADMIN, f"insert into ejecuciones (campania_id,linea,servicio,unidad_id,fecha,hora_inicio_prog,hora_fin_prog) values ('c0000000-0000-0000-0000-000000000002','move','led','a0000000-0000-0000-0000-000000000001',{AD},'06:30','07:30'); select cardinality(sin_cupo)::text from agenda_disponibilidad({AD},1) where nombre='Entrada de la mañana';", True, '1'),
+ ("PubliEscuela: convertir crea una zona por escuela y el cupo sigue apartado", 'authenticated',ADMIN, f"insert into solicitudes (objetivo,ciudades,contacto_nombre,contacto_telefono,franja_id,fecha_inicio,dias_recorrido,escuelas,servicios) values ('PubliEscuela','{{Tegucigalpa}}','Ana','+504 9999-9999',(select id from agenda_franjas where nombre='Salida de la tarde'),{AD}+14,7,'[{{\"nombre\":\"Escuela A\",\"lat\":14.08,\"lng\":-87.2,\"radio_km\":1}},{{\"nombre\":\"Escuela B\",\"lat\":14.09,\"lng\":-87.21,\"radio_km\":0.5}}]','{{move:publiescuela,move:volanteo}}'); select convertir_solicitud((select id from solicitudes where objetivo='PubliEscuela' and estado='nueva'),null,'Colegio X','Campaña PE'); select cardinality(zonas)::text || '/' || (select cardinality(sin_cupo) from agenda_disponibilidad({AD}+14,7) where nombre='Salida de la tarde') from campanias where nombre='Campaña PE';", True, '2/7'),
 ]
 ok=0
 for name,role,uid,sql,should_pass,expect in tests:

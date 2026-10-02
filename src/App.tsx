@@ -5,9 +5,18 @@ import { WhatsAppButton } from "@/components/contact/WhatsAppButton";
 import { Hero } from "@/sections/Hero";
 
 const BelowTheFold = lazy(() => import("@/sections/BelowTheFold"));
+const PubliEscuela = lazy(() => import("@/pages/PubliEscuela"));
+
+/** Páginas de servicio dentro del mismo sitio (mismo header y footer). */
+export const esPubliEscuela = () => /^\/publi-escuela\/?$/.test(window.location.pathname);
 
 /** Narrativa: MARCA → VEHÍCULO → CALLE → RUTA → COBERTURA → DATOS → RESULTADO */
 export default function App() {
+  if (esPubliEscuela()) return <Sitio><Suspense fallback={<div className="min-h-screen" aria-hidden />}><PubliEscuela /></Suspense></Sitio>;
+  return <Inicio />;
+}
+
+function Inicio() {
   // Lo de abajo del hero se monta DESPUÉS del primer pintado y como transición (React lo trocea y no bloquea el hilo principal)
   const [resto, setResto] = useState(false);
   useEffect(() => {
@@ -31,6 +40,18 @@ export default function App() {
   }, [resto]);
 
   return (
+    <Sitio>
+      <Hero />
+      <Suspense fallback={<div className="min-h-screen" aria-hidden />}>
+        {resto ? <BelowTheFold /> : <div className="min-h-screen" aria-hidden />}
+      </Suspense>
+    </Sitio>
+  );
+}
+
+/** Marco común de la web pública: header y footer de Publicalle. */
+function Sitio({ children }: { children: React.ReactNode }) {
+  return (
     <>
       <a
         href="#contenido"
@@ -39,12 +60,7 @@ export default function App() {
         Saltar al contenido
       </a>
       <Navbar />
-      <main id="contenido">
-        <Hero />
-        <Suspense fallback={<div className="min-h-screen" aria-hidden />}>
-          {resto ? <BelowTheFold /> : <div className="min-h-screen" aria-hidden />}
-        </Suspense>
-      </main>
+      <main id="contenido">{children}</main>
       <Footer />
       <aside aria-label="Contacto rápido">
         <WhatsAppButton variant="floating" />

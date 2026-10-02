@@ -3,7 +3,7 @@ import { AnimatePresence, m } from "motion/react";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { PublicalleLogo } from "@/components/brand/PublicalleLogo";
 import { ButtonLink } from "@/components/ui/Button";
-import { mainNav, primaryCta } from "@/config/navigation";
+import { enPortada, hrefSitio, mainNav, primaryCta } from "@/config/navigation";
 import { useScrolled } from "@/hooks/useScrolled";
 import { useActiveSection } from "@/hooks/useActiveSection";
 import { cn } from "@/lib/cn";
@@ -12,7 +12,12 @@ const SECTION_IDS = mainNav.map((n) => n.id);
 
 export function Navbar() {
   const scrolled = useScrolled(24);
-  const active = useActiveSection(SECTION_IDS);
+  const portada = enPortada();
+  const seccion = useActiveSection(SECTION_IDS);
+  // Fuera de la portada, el menú marca la página de servicio actual (p. ej. PubliEscuela)
+  const active = portada ? seccion : mainNav.find((n) => n.href === window.location.pathname.replace(/\/$/, ""))?.id ?? null;
+  // En una página de servicio, el botón principal lleva a su propio configurador
+  const cta = portada ? primaryCta : { ...primaryCta, label: "Configurar campaña", shortLabel: "Configurar", href: "#configurar" };
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -39,7 +44,7 @@ export function Navbar() {
             scrolled ? "h-16" : "h-[var(--nav-h)] md:h-24",
           )}
         >
-          <a href="#inicio" className="logo-shine shrink-0 rounded-lg" aria-label="Publicalle — inicio">
+          <a href={portada ? "#inicio" : "/"} className="logo-shine shrink-0 rounded-lg" aria-label="Publicalle — inicio">
             <PublicalleLogo theme="dark" animate height={scrolled ? 40 : 52} className={cn("w-auto transition-all duration-500", scrolled ? "h-9 sm:h-10" : "h-10 sm:h-[52px]")} />
           </a>
 
@@ -47,7 +52,7 @@ export function Navbar() {
             {mainNav.map((item) => (
               <li key={item.id}>
                 <a
-                  href={item.href}
+                  href={hrefSitio(item.href)}
                   aria-current={active === item.id ? "true" : undefined}
                   className={cn(
                     "relative rounded-full px-3.5 py-2 text-[0.92rem] font-medium transition-colors xl:px-4",
@@ -68,9 +73,9 @@ export function Navbar() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <ButtonLink href={primaryCta.href} size="sm" className="max-[359px]:hidden" icon={<ArrowUpRight className="size-4" aria-hidden />}>
-              <span className="sm:hidden">{primaryCta.shortLabel}</span>
-              <span className="max-sm:hidden">{primaryCta.label}</span>
+            <ButtonLink href={cta.href} size="sm" className="max-[359px]:hidden" icon={<ArrowUpRight className="size-4" aria-hidden />}>
+              <span className="sm:hidden">{cta.shortLabel}</span>
+              <span className="max-sm:hidden">{cta.label}</span>
             </ButtonLink>
             <button
               type="button"
@@ -107,7 +112,7 @@ export function Navbar() {
                     className="border-b border-line"
                   >
                     <a
-                      href={item.href}
+                      href={hrefSitio(item.href)}
                       onClick={() => setOpen(false)}
                       className="flex items-baseline justify-between py-5 text-3xl font-extrabold tracking-tight [font-stretch:115%]"
                     >
@@ -118,8 +123,8 @@ export function Navbar() {
                 ))}
               </ol>
               <div className="mt-auto pt-10">
-                <ButtonLink href={primaryCta.href} size="lg" className="w-full" onClick={() => setOpen(false)}>
-                  {primaryCta.label}
+                <ButtonLink href={cta.href} size="lg" className="w-full" onClick={() => setOpen(false)}>
+                  {cta.label}
                 </ButtonLink>
               </div>
             </nav>

@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
-import { CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Map as MapIcon, Plus, Truck, Users, LayoutGrid } from "lucide-react";
+import { CalendarClock, CalendarDays, Building2, CircleUser, FolderKanban, Inbox, Map as MapIcon, Plus, Truck, Users, LayoutGrid } from "lucide-react";
 import { AuthProvider, esStaff, useAuth } from "./auth";
 import { Shell, type NavItem } from "./Shell";
 import { Loading } from "./ui";
@@ -16,6 +16,7 @@ import Jornadas from "./admin/Jornadas";
 import JornadaDetalle from "./admin/JornadaDetalle";
 import Unidades from "./admin/Unidades";
 import Zonas from "./admin/Zonas";
+import Agenda from "./admin/Agenda";
 import Usuarios from "./admin/Usuarios";
 import PortalInicio from "./portal/PortalInicio";
 import PortalCampania from "./portal/PortalCampania";
@@ -28,6 +29,7 @@ const adminNav: NavItem[] = [
   { to: "/admin/clientes", label: "Clientes", icon: <Building2 /> },
   { to: "/admin/campanias", label: "Campañas", icon: <FolderKanban /> },
   { to: "/admin/jornadas", label: "Jornadas", icon: <CalendarDays /> },
+  { to: "/admin/agenda", label: "Agenda", icon: <CalendarClock /> },
   { to: "/admin/zonas", label: "Zonas", icon: <MapIcon /> },
   { to: "/admin/unidades", label: "Unidades", icon: <Truck /> },
   { to: "/admin/usuarios", label: "Usuarios y operadores", icon: <Users /> },
@@ -77,6 +79,7 @@ export default function PlatformApp() {
             <Route path="jornadas" element={<Jornadas />} />
             <Route path="jornadas/:id" element={<JornadaDetalle />} />
             <Route path="zonas" element={<Zonas />} />
+            <Route path="agenda" element={<Agenda />} />
             <Route path="unidades" element={<Unidades />} />
             <Route path="usuarios" element={<Usuarios />} />
             <Route path="cuenta" element={<Cuenta />} />

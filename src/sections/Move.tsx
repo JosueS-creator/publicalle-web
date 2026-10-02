@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { m, useScroll } from "motion/react";
-import { Clapperboard, Megaphone, MonitorPlay, Music, Newspaper, Wifi } from "lucide-react";
+import { ArrowRight, Clapperboard, Megaphone, MonitorPlay, Music, Newspaper, School, Wifi } from "lucide-react";
 import { LineHeading } from "@/components/ui/LineHeading";
 import { VehicleShowcase } from "@/components/vehicle/VehicleShowcase";
 import { StreetVideo } from "@/components/vehicle/StreetVideo";
@@ -55,6 +55,16 @@ export function Move() {
               );
             })}
           </m.ul>
+          <a href="/publi-escuela" className="group mt-4 flex items-center gap-4 rounded-2xl bg-brand-blue-dark/40 p-4 ring-1 ring-inset ring-brand-green/30 transition-colors hover:bg-brand-blue-dark/70 hover:ring-brand-green/60">
+            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-brand-green/15 text-brand-green-light">
+              <School className="size-5" aria-hidden />
+            </span>
+            <span className="grid flex-1 gap-0.5">
+              <span className="font-semibold">PubliEscuela</span>
+              <span className="text-sm text-muted">Recorridos de 2 h/día alrededor de las escuelas que elijas.</span>
+            </span>
+            <ArrowRight className="size-5 text-brand-green transition-transform group-hover:translate-x-1" aria-hidden />
+          </a>
         </div>
         <m.div variants={reveal} initial="hidden" whileInView="show" viewport={viewportOnce} className="lg:col-span-7">
           <StreetVideo src={streetVideo} poster={streetPoster} title={move.video.title} caption={move.video.caption} />

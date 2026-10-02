@@ -65,6 +65,7 @@ export const catalogo = briefServices.map((l) => ({
 
 export function servicioLabel(linea: string, servicio: string) {
   if (servicio === "asesoria") return "Necesita asesoría";
+  if (servicio === "publiescuela") return "PubliEscuela";
   return briefServices.flatMap((l) => l.options).find((o) => o.id === `${linea}:${servicio}`)?.label ?? servicio;
 }
 

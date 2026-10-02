@@ -125,3 +125,17 @@ Modelo operativo, roles, evidencia por línea y qué ve cada rol: `docs/platafor
 - Proyecto `publicalle` (región East US). Las migraciones y la Edge Function ya están aplicadas.
 - Vercel → Environment Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (solo la llave **anon**).
 - Authentication → desactivar "Allow new users to sign up" (los usuarios se crean desde `/admin/usuarios`).
+
+## PubliEscuela (`/publi-escuela`)
+
+Servicio de **Publicalle MOVE** dentro del mismo sitio (mismo header, footer, tokens, mapa y tabla `solicitudes`):
+recorridos de **2 h/día** por los barrios y colonias alrededor de las escuelas que elige el cliente.
+
+- Página: `src/pages/PubliEscuela.tsx` (carga aparte, no pesa en la portada). Configurador: `src/components/publiescuela/Configurador.tsx`.
+- Datos y reglas (duraciones 7/14/21/30 días, radios, volanteo L5,000): `src/lib/publiescuela.ts`.
+- **Agenda** (Admin → Agenda): horarios de 2 h con **cupos**, días de la semana y **días sin servicio**.
+  El cliente ve la disponibilidad real y el **servidor** vuelve a validar el cupo al guardar (no se puede saltar).
+  Una solicitud aparta su cupo mientras está nueva / en revisión / convertida; descartarla lo libera.
+  Los vehículos programados en Jornadas en ese horario también ocupan cupo.
+- Al convertir la solicitud en campaña se crea **una zona por escuela** (para medir el recorrido en cada una).
+- El recorrido no tiene precio publicado: el resumen muestra «Solicitar cotización» (más el volanteo si se elige).

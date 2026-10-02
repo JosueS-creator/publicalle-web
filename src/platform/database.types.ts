@@ -7,6 +7,20 @@ export type Database = {
   __InternalSupabase: { PostgrestVersion: "14.5" };
   public: {
     Tables: {
+      agenda_franjas: {
+        Row: { id: string; nombre: string; hora_inicio: string; hora_fin: string; dias_semana: number[]; cupos: number; activa: boolean; orden: number; creado_en: string };
+        Insert: { nombre: string; hora_inicio: string; hora_fin: string; dias_semana?: number[]; cupos?: number; activa?: boolean; orden?: number };
+        Update: { nombre?: string; hora_inicio?: string; hora_fin?: string; dias_semana?: number[]; cupos?: number; activa?: boolean; orden?: number };
+        Relationships: [];
+      };
+      agenda_bloqueos: {
+        Row: { id: string; fecha: string; franja_id: string | null; motivo: string | null; creado_en: string };
+        Insert: { fecha: string; franja_id?: string | null; motivo?: string | null };
+        Update: { fecha?: string; franja_id?: string | null; motivo?: string | null };
+        Relationships: [
+          { foreignKeyName: "agenda_bloqueos_franja_id_fkey"; columns: ["franja_id"]; isOneToOne: false; referencedRelation: "agenda_franjas"; referencedColumns: ["id"] },
+        ];
+      };
       campania_servicios: {
         Row: { campania_id: string; cantidad: number; detalle: Json; id: string; linea: Database["public"]["Enums"]["linea_servicio"]; servicio: string; unidad_medida: string };
         Insert: { campania_id: string; cantidad?: number; detalle?: Json; id?: string; linea: Database["public"]["Enums"]["linea_servicio"]; servicio: string; unidad_medida?: string };
@@ -128,11 +142,13 @@ export type Database = {
           fechas_flexibles: boolean; folio: string | null; horario: string | null; id: string; lineas: Database["public"]["Enums"]["linea_servicio"][];
           notas_internas: string | null; objetivo: string; origen: string; presupuesto: string | null; servicios: string[]; zonas: string | null;
           ubicacion_lat: number | null; ubicacion_lng: number | null; ubicacion_ref: string | null; radio_km: number | null; zonas_elegidas: string[];
+          franja_id: string | null; dias_recorrido: number | null; escuelas: { nombre: string; lat: number; lng: number; radio_km: number }[] | null; fechas_reserva: string[];
         };
         Insert: { ciudades: string[]; contacto_nombre: string; contacto_telefono: string; objetivo: string; [k: string]: unknown };
         Update: { estado?: Database["public"]["Enums"]["estado_solicitud"]; notas_internas?: string | null; atendida_por?: string | null; empresa_id?: string | null };
         Relationships: [
           { foreignKeyName: "solicitudes_empresa_id_fkey"; columns: ["empresa_id"]; isOneToOne: false; referencedRelation: "empresas"; referencedColumns: ["id"] },
+          { foreignKeyName: "solicitudes_franja_id_fkey"; columns: ["franja_id"]; isOneToOne: false; referencedRelation: "agenda_franjas"; referencedColumns: ["id"] },
         ];
       };
       unidades: {
@@ -155,6 +171,11 @@ export type Database = {
       };
     };
     Functions: {
+      agenda_ocupacion: {
+        Args: { p_desde: string; p_hasta: string };
+        Returns: { fecha: string; franja_id: string; cupos: number; libres: number; bloqueado: boolean; reservas: { id: string; folio: string; estado: string; contacto: string }[] }[];
+      };
+      hoy_hn: { Args: never; Returns: string };
       convertir_solicitud: { Args: { p_empresa: string | null; p_empresa_nombre: string | null; p_nombre: string; p_solicitud: string }; Returns: string };
       es_staff: { Args: never; Returns: boolean };
       mis_solicitudes: { Args: never; Returns: { id: string; folio: string; estado: Database["public"]["Enums"]["estado_solicitud"]; objetivo: string; ciudades: string[]; creado_en: string }[] };

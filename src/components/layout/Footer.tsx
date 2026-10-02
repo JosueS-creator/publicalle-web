@@ -8,9 +8,11 @@ import { site } from "@/config/site";
 import { whatsappUrl } from "@/lib/whatsapp";
 import { serviceLines } from "@/data/services";
 import { brandMessage } from "@/data/site";
+import { hrefSitio } from "@/config/navigation";
 
 const footerLinks = [
   ...serviceLines.map((l) => ({ label: `Publicalle ${l.name[0]}${l.name.slice(1).toLowerCase()}`, href: l.href })),
+  { label: "PubliEscuela", href: "/publi-escuela" },
   { label: "Campañas combinadas", href: "#campanas-combinadas" },
   { label: "Cobertura", href: "#cobertura" },
   { label: "Crear una campaña", href: "#contacto" },
@@ -32,7 +34,7 @@ export function Footer() {
           <ul className="mt-4 space-y-3">
             {footerLinks.map((l) => (
               <li key={l.href}>
-                <a href={l.href} className="text-brand-white/80 transition-colors hover:text-brand-green">
+                <a href={hrefSitio(l.href)} className="text-brand-white/80 transition-colors hover:text-brand-green">
                   {l.label}
                 </a>
               </li>

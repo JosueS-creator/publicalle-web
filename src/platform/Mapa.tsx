@@ -21,6 +21,8 @@ export default function Mapa({
   borrador,
   onClick,
   circulo,
+  circulos = [],
+  vehiculo = false,
   seleccionadas,
   onZonaClick,
   centrar,
@@ -37,6 +39,10 @@ export default function Mapa({
   onClick?: (p: LatLng) => void;
   /** Radio alrededor de un punto (brief: "a X km de mi negocio"). */
   circulo?: LatLng & { km: number };
+  /** Varios radios (PubliEscuela: barrios alrededor de cada escuela). El mapa los encuadra al cambiar. */
+  circulos?: (LatLng & { km: number; label?: string })[];
+  /** Un vehículo recorre `rutas` en bucle (demostración de movimiento). */
+  vehiculo?: boolean;
   /** Zonas resaltadas (elegidas) y clic sobre una zona. */
   seleccionadas?: string[];
   onZonaClick?: (nombre: string) => void;
@@ -103,6 +109,12 @@ export default function Mapa({
       c.addTo(g);
       b.extend(c.getBounds());
     }
+    circulos.forEach((cc) => {
+      const c = L.circle(cc, { radius: cc.km * 1000, color: VERDE, weight: 2, fillColor: VERDE, fillOpacity: 0.14, dashArray: "6 6", interactive: !!cc.label });
+      if (cc.label) c.bindTooltip(cc.label);
+      c.addTo(g);
+      b.extend(c.getBounds());
+    });
     rutasSecundarias.forEach((t) => t.length > 1 && L.polyline(t, { color: "#8d97ad", weight: 3, opacity: 0.6, dashArray: "4 6" }).addTo(g));
     rutas.forEach((t) => {
       if (t.length > 1) L.polyline(t, { color: VERDE, weight: 5, opacity: 0.95 }).addTo(g);
@@ -138,7 +150,51 @@ export default function Mapa({
       m.fitBounds(b.pad(0.15), { maxZoom: 16 });
       ajustado.current = true;
     }
-  }, [zonas, rutas, rutasSecundarias, puntos, borrador, onClick, circulo, seleccionadas, pin, onPinMove]);
+  }, [zonas, rutas, rutasSecundarias, puntos, borrador, onClick, circulo, circulos, seleccionadas, pin, onPinMove]);
+
+  // Varios radios: encuadrarlos todos cuando cambian (agregar o quitar una escuela, cambiar el radio)
+  const firma = circulos.map((c) => `${c.lat},${c.lng},${c.km}`).join("|");
+  useEffect(() => {
+    if (!map.current || !circulos.length) return;
+    const b = L.latLngBounds([]);
+    circulos.forEach((c) => b.extend(L.latLng(c).toBounds(c.km * 2000)));
+    map.current.fitBounds(b.pad(0.08), { maxZoom: 16 });
+  }, [firma]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Vehículo en movimiento sobre las rutas (respeta "reducir movimiento")
+  useEffect(() => {
+    const m = map.current;
+    const camino = rutas.flat();
+    if (!m || !vehiculo || camino.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const icon = L.divIcon({
+      className: "",
+      html: '<div style="width:18px;height:18px;border-radius:50%;background:#46e3cf;border:3px solid #050a17;box-shadow:0 0 0 6px rgba(34,201,180,.25),0 0 18px rgba(70,227,207,.9)"></div>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+    const mk = L.marker(camino[0], { icon, interactive: false, keyboard: false }).addTo(m);
+    // largo acumulado para avanzar a velocidad constante
+    const acc = [0];
+    for (let i = 1; i < camino.length; i++) acc.push(acc[i - 1] + m.distance(camino[i - 1], camino[i]));
+    const total = acc[acc.length - 1] || 1;
+    const vuelta = Math.min(40000, Math.max(9000, total * 4)); // ms por vuelta
+    let raf = 0;
+    const t0 = performance.now();
+    const paso = (t: number) => {
+      const d = (((t - t0) % vuelta) / vuelta) * total;
+      let i = 1;
+      while (i < acc.length - 1 && acc[i] < d) i++;
+      const f = (d - acc[i - 1]) / ((acc[i] - acc[i - 1]) || 1);
+      const a = camino[i - 1], z = camino[i];
+      mk.setLatLng([a.lat + (z.lat - a.lat) * f, a.lng + (z.lng - a.lng) * f]);
+      raf = requestAnimationFrame(paso);
+    };
+    raf = requestAnimationFrame(paso);
+    return () => {
+      cancelAnimationFrame(raf);
+      mk.remove();
+    };
+  }, [rutas, vehiculo]);
 
   useEffect(() => {
     if (!map.current) return;

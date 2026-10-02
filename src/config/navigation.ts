@@ -1,4 +1,8 @@
-export type NavItem = { id: string; label: string; href: `#${string}` };
+export type NavItem = { id: string; label: string; href: string };
+
+/** En páginas de servicio (/publi-escuela) las anclas vuelven a la portada: "#move" → "/#move". */
+export const enPortada = () => window.location.pathname === "/";
+export const hrefSitio = (href: string) => (href.startsWith("#") && !enPortada() ? `/${href}` : href);
 
 /** Menú principal: el ecosistema PUBLICALLE + cobertura. */
 export const mainNav: NavItem[] = [
@@ -8,6 +12,7 @@ export const mainNav: NavItem[] = [
   { id: "place", label: "Place", href: "#place" },
   { id: "data", label: "Data", href: "#data" },
   { id: "cobertura", label: "Cobertura", href: "#cobertura" },
+  { id: "publi-escuela", label: "PubliEscuela", href: "/publi-escuela" },
 ];
 
 export const primaryCta = { label: "Crear una campaña", shortLabel: "Crear campaña", href: "#contacto" } as const;

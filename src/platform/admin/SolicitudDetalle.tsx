@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { ArrowRight, MessageCircle, Save } from "lucide-react";
 import { sb } from "../supabase";
-import { estadoSolicitud, fecha, fechaHora, servicioIdLabel } from "../labels";
+import { estadoSolicitud, fecha, fechaHora, hora, servicioIdLabel } from "../labels";
 import type { Enum } from "../database.types";
 import { Mapa } from "../MapaLazy";
 import { Btn, Card, Dl, ErrorBox, Estado, Field, Input, Loading, OkBox, Page, Select, Textarea, must, useAction, useAsync } from "../ui";
@@ -12,7 +12,7 @@ export default function SolicitudDetalle() {
   const nav = useNavigate();
   const { data, error, loading, reload } = useAsync(async () => {
     const [s, empresas] = await Promise.all([
-      sb.from("solicitudes").select("*").eq("id", id).single(),
+      sb.from("solicitudes").select("*, agenda_franjas(nombre, hora_inicio, hora_fin)").eq("id", id).single(),
       sb.from("empresas").select("id, nombre").order("nombre"),
     ]);
     const sol = must(s);
@@ -69,7 +69,28 @@ export default function SolicitudDetalle() {
               ]}
             />
           </Card>
-          {(s.ubicacion_lat != null || s.zonas_elegidas.length > 0) && (
+          {s.escuelas?.length ? (
+            <Card title="PubliEscuela · escuelas y horario">
+              <div className="grid gap-3">
+                <Mapa
+                  alto={320}
+                  etiqueta="Escuelas elegidas y área alrededor"
+                  puntos={s.escuelas.map((e) => ({ lat: e.lat, lng: e.lng, label: e.nombre }))}
+                  circulos={s.escuelas.map((e) => ({ lat: e.lat, lng: e.lng, km: Number(e.radio_km), label: `${e.nombre} · ${e.radio_km} km` }))}
+                />
+                <Dl
+                  items={[
+                    ["Escuelas", s.escuelas.map((e) => `${e.nombre} (${e.radio_km} km alrededor)`).join(" · ")],
+                    ["Horario", s.agenda_franjas ? `${s.agenda_franjas.nombre} · ${hora(s.agenda_franjas.hora_inicio)}–${hora(s.agenda_franjas.hora_fin)}` : s.horario],
+                    ["Días de recorrido", s.dias_recorrido ? `${s.dias_recorrido} días · 2 h/día` : ""],
+                    ["Fechas apartadas", s.fechas_reserva.length ? s.fechas_reserva.map((d) => fecha(d)).join(", ") : ""],
+                    ["Volanteo", s.servicios.includes("move:volanteo") ? "Sí" : "No"],
+                  ]}
+                />
+                <p className="text-xs text-muted">El horario queda apartado en la Agenda mientras la solicitud esté nueva, en revisión o convertida. Al convertir, se crea una zona por cada escuela.</p>
+              </div>
+            </Card>
+          ) : (s.ubicacion_lat != null || s.zonas_elegidas.length > 0) && (
             <Card title="Ubicación y área elegida en el mapa">
               <div className="grid gap-3">
                 <Mapa
