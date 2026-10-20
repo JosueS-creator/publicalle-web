@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router";
 import { sb } from "../supabase";
-import { estadoCampania, fecha } from "../labels";
+import { estadoCampania, estadoCotizacion, fecha } from "../labels";
 import type { Enum } from "../database.types";
 import { Card, Empty, ErrorBox, Estado, Loading, Page, Select, Table, Td, must, useAsync } from "../ui";
 
@@ -10,7 +10,7 @@ export default function Campanias() {
   const { data, error, loading } = useAsync(async () => {
     let q = sb
       .from("campanias")
-      .select("id, nombre, estado, fecha_inicio, fecha_fin, ciudades, empresas(id, nombre), ejecuciones(count)")
+      .select("id, nombre, estado, fecha_inicio, fecha_fin, ciudades, empresas(id, nombre), ejecuciones(count), cotizaciones(numero, version, estado, total)")
       .order("creado_en", { ascending: false })
       .limit(300);
     if (estado) q = q.eq("estado", estado);
@@ -41,7 +41,7 @@ export default function Campanias() {
         ) : !data?.length ? (
           <Empty>No hay campañas en esta vista.</Empty>
         ) : (
-          <Table head={["Campaña", "Cliente", "Fechas", "Jornadas", "Estado"]}>
+          <Table head={["Campaña", "Cliente", "Fechas", "Cotización", "Jornadas", "Estado"]}>
             {data.map((c) => (
               <tr key={c.id} className="hover:bg-white/[0.03]">
                 <Td>
@@ -52,6 +52,12 @@ export default function Campanias() {
                 </Td>
                 <Td>{c.empresas?.nombre}</Td>
                 <Td className="whitespace-nowrap text-muted">{c.fecha_inicio ? `${fecha(c.fecha_inicio)} → ${fecha(c.fecha_fin)}` : "Sin fechas"}</Td>
+                <Td className="whitespace-nowrap">
+                  {(() => {
+                    const q = [...c.cotizaciones].sort((a, b) => b.version - a.version)[0];
+                    return q ? <span className="flex flex-col gap-1"><span className="font-mono text-xs">{q.numero ?? "Borrador"}</span><Estado map={estadoCotizacion} value={q.estado} /></span> : <span className="text-muted">—</span>;
+                  })()}
+                </Td>
                 <Td>{c.ejecuciones[0]?.count ?? 0}</Td>
                 <Td><Estado map={estadoCampania} value={c.estado} /></Td>
               </tr>

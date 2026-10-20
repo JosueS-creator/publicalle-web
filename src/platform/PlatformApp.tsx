@@ -6,6 +6,7 @@ import { Shell, type NavItem } from "./Shell";
 import { Loading } from "./ui";
 import Login from "./Login";
 import Cuenta from "./Cuenta";
+import CotizacionPublica from "./CotizacionPublica";
 import Solicitudes from "./admin/Solicitudes";
 import SolicitudDetalle from "./admin/SolicitudDetalle";
 import Clientes from "./admin/Clientes";
@@ -69,6 +70,7 @@ export default function PlatformApp() {
       <BrowserRouter>
         <Routes>
           <Route path="/entrar" element={<Login />} />
+          <Route path="/cotizacion/:token" element={<CotizacionPublica />} />
           <Route path="/admin" element={<Guard allow="staff"><Shell nav={adminNav} area="Panel de administración" /></Guard>}>
             <Route index element={<Solicitudes />} />
             <Route path="solicitudes/:id" element={<SolicitudDetalle />} />

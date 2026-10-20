@@ -21,6 +21,14 @@ export const estadoCampania: Record<Enum<"estado_campania">, [string, Tone]> = {
   cancelada: ["Cancelada", "red"],
 };
 
+export const estadoCotizacion: Record<Enum<"estado_cotizacion">, [string, Tone]> = {
+  borrador: ["Borrador", "gray"],
+  emitida: ["Emitida", "blue"],
+  compartida: ["Compartida", "green"],
+  vencida: ["Vencida", "amber"],
+  cancelada: ["Cancelada", "red"],
+};
+
 export const estadoEjecucion: Record<Enum<"estado_ejecucion">, [string, Tone]> = {
   programada: ["Programada", "blue"],
   en_curso: ["En curso", "green"],

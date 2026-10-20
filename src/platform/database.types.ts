@@ -51,6 +51,69 @@ export type Database = {
           { foreignKeyName: "campanias_solicitud_id_fkey"; columns: ["solicitud_id"]; isOneToOne: false; referencedRelation: "solicitudes"; referencedColumns: ["id"] },
         ];
       };
+      config_comercial: {
+        Row: {
+          id: boolean; razon_social: string | null; rtn: string | null; telefono: string | null; correo: string | null; direccion: string | null;
+          sitio_web: string | null; logo_ref: string | null; condiciones_defecto: string | null; vigencia_dias_defecto: number | null;
+          isv_porcentaje: number | null; moneda: string; actualizado_en: string;
+        };
+        Insert: {
+          razon_social?: string | null; rtn?: string | null; telefono?: string | null; correo?: string | null; direccion?: string | null;
+          sitio_web?: string | null; logo_ref?: string | null; condiciones_defecto?: string | null; vigencia_dias_defecto?: number | null;
+          isv_porcentaje?: number | null; moneda?: string;
+        };
+        Update: {
+          razon_social?: string | null; rtn?: string | null; telefono?: string | null; correo?: string | null; direccion?: string | null;
+          sitio_web?: string | null; logo_ref?: string | null; condiciones_defecto?: string | null; vigencia_dias_defecto?: number | null;
+          isv_porcentaje?: number | null; moneda?: string; actualizado_en?: string;
+        };
+        Relationships: [];
+      };
+      cotizaciones: {
+        Row: {
+          id: string; campania_id: string; numero: string | null; version: number; cotizacion_origen_id: string | null;
+          estado: Database["public"]["Enums"]["estado_cotizacion"]; proyecto: string | null; cliente_contacto: string | null; moneda: string;
+          fecha_emision: string | null; vigencia_dias: number | null; fecha_vencimiento: string | null; impuesto_porcentaje: number;
+          condiciones: string | null; notas_internas: string | null; subtotal: number; descuento_total: number; impuesto_total: number; total: number;
+          snapshot: Json | null; token_hash: string | null; enlace_revocado_en: string | null; emitida_en: string | null; emitida_por: string | null;
+          creado_por: string | null; creado_en: string; actualizado_en: string;
+        };
+        Insert: {
+          campania_id: string; proyecto?: string | null; cliente_contacto?: string | null; moneda?: string; vigencia_dias?: number | null;
+          impuesto_porcentaje?: number; condiciones?: string | null; notas_internas?: string | null; creado_por?: string | null;
+        };
+        Update: {
+          proyecto?: string | null; cliente_contacto?: string | null; vigencia_dias?: number | null; impuesto_porcentaje?: number;
+          condiciones?: string | null; notas_internas?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "cotizaciones_campania_id_fkey"; columns: ["campania_id"]; isOneToOne: false; referencedRelation: "campanias"; referencedColumns: ["id"] },
+        ];
+      };
+      cotizacion_conceptos: {
+        Row: {
+          id: string; cotizacion_id: string; campania_servicio_id: string | null; orden: number; concepto: string; descripcion: string | null;
+          cantidad: number; unidad: string; precio_unitario: number; descuento_porcentaje: number; subtotal: number;
+        };
+        Insert: {
+          id?: string; cotizacion_id: string; campania_servicio_id?: string | null; orden?: number; concepto: string; descripcion?: string | null;
+          cantidad: number; unidad?: string; precio_unitario: number; descuento_porcentaje?: number;
+        };
+        Update: {
+          orden?: number; concepto?: string; descripcion?: string | null; cantidad?: number; unidad?: string; precio_unitario?: number; descuento_porcentaje?: number;
+        };
+        Relationships: [
+          { foreignKeyName: "cotizacion_conceptos_cotizacion_id_fkey"; columns: ["cotizacion_id"]; isOneToOne: false; referencedRelation: "cotizaciones"; referencedColumns: ["id"] },
+        ];
+      };
+      cotizacion_eventos: {
+        Row: { id: string; cotizacion_id: string; evento: string; detalle: Json; usuario: string | null; creado_en: string };
+        Insert: never;
+        Update: never;
+        Relationships: [
+          { foreignKeyName: "cotizacion_eventos_cotizacion_id_fkey"; columns: ["cotizacion_id"]; isOneToOne: false; referencedRelation: "cotizaciones"; referencedColumns: ["id"] },
+        ];
+      };
       ejecuciones: {
         Row: {
           campania_id: string; creado_en: string; estado: Database["public"]["Enums"]["estado_ejecucion"]; fecha: string;
@@ -186,11 +249,19 @@ export type Database = {
         Args: { p_campania: string };
         Returns: { id: string; fecha: string; linea: Database["public"]["Enums"]["linea_servicio"]; servicio: string; estado: Database["public"]["Enums"]["estado_ejecucion"]; zonas: string[]; punto_nombre: string | null; fotos_recibidas: number }[];
       };
+      emitir_cotizacion: { Args: { p_id: string }; Returns: { id: string; numero: string | null; estado: Database["public"]["Enums"]["estado_cotizacion"]; version: number } };
+      crear_revision_cotizacion: { Args: { p_id: string }; Returns: { id: string; numero: string | null; estado: Database["public"]["Enums"]["estado_cotizacion"]; version: number } };
+      compartir_cotizacion: { Args: { p_id: string }; Returns: string };
+      revocar_enlace_cotizacion: { Args: { p_id: string }; Returns: undefined };
+      cancelar_cotizacion: { Args: { p_id: string }; Returns: undefined };
+      marcar_cotizaciones_vencidas: { Args: never; Returns: number };
+      cotizacion_publica: { Args: { p_token: string }; Returns: Json };
       mi_empresa: { Args: never; Returns: string };
       mi_rol: { Args: never; Returns: Database["public"]["Enums"]["rol_usuario"] };
     };
     Enums: {
       estado_campania: "borrador" | "cotizacion_enviada" | "aprobada" | "programada" | "en_ejecucion" | "finalizada" | "reportada" | "cancelada";
+      estado_cotizacion: "borrador" | "emitida" | "compartida" | "vencida" | "cancelada";
       estado_ejecucion: "programada" | "en_curso" | "pausada" | "finalizada" | "validada" | "rechazada" | "incompleta";
       estado_evidencia: "pendiente" | "validada" | "rechazada";
       estado_solicitud: "nueva" | "en_revision" | "convertida" | "descartada";

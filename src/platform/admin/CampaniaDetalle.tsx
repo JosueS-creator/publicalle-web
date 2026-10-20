@@ -4,6 +4,7 @@ import { CalendarPlus, Plus, Save, Trash2 } from "lucide-react";
 import { sb } from "../supabase";
 import { catalogo, estadoCampania, estadoEjecucion, fecha, hora, lineaLabel, lista, servicioLabel } from "../labels";
 import type { Enum } from "../database.types";
+import CotizacionCard from "./CotizacionCard";
 import { Btn, Card, Chips, Empty, ErrorBox, Estado, Field, Input, Loading, OkBox, Page, Select, Table, Td, must, useAction, useAsync } from "../ui";
 
 const UNIDADES_MEDIDA: [string, string][] = [
@@ -161,6 +162,8 @@ export default function CampaniaDetalle() {
         </form>
         <div className="mt-3"><ErrorBox msg={servAcc.error} /></div>
       </Card>
+
+      <CotizacionCard campania={c} serv={data.serv} onChange={reload} />
 
       <Card title="Jornadas">
         {!data.jor.length ? (

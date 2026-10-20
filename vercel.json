@@ -14,7 +14,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(admin|portal|operador|entrar|publi-escuela)(.*)",
+      "source": "/(admin|portal|operador|entrar|cotizacion|publi-escuela)(.*)",
       "destination": "/index.html"
     }
   ]
