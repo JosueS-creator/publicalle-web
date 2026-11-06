@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Check, ShieldCheck, Save, Upload, X } from "lucide-react";
+import { Check, ShieldCheck, Save, Upload, X, KeyRound, Copy, MessageCircle } from "lucide-react";
 import { useAuth } from "../auth";
-import { sb } from "../supabase";
+import { adminUsuarios, sb } from "../supabase";
 import { estadoEjecucion, estadoEvidencia, fecha, fechaHora, hora, momentoLabel, servicioLabel } from "../labels";
 import type { Database, Enum } from "../database.types";
 import { kmRecorrido } from "../operador/geo";
@@ -24,7 +24,7 @@ export default function JornadaDetalle() {
     const [j, ev, t, gps, incid, unidades, operadores, enZona, cob, punto] = await Promise.all([
       sb
         .from("ejecuciones")
-        .select("*, campanias(id, nombre, zonas, empresas(nombre)), unidades(nombre), operador:perfiles!ejecuciones_operador_id_fkey(nombre), validador:perfiles!ejecuciones_validada_por_fkey(nombre)")
+        .select("*, campanias(id, nombre, zonas, empresa_id, empresas(nombre, telefono)), unidades(nombre), operador:perfiles!ejecuciones_operador_id_fkey(nombre), validador:perfiles!ejecuciones_validada_por_fkey(nombre)")
         .eq("id", id)
         .single(),
       sb.from("evidencias").select("*").eq("ejecucion_id", id).order("registrado_en"),
@@ -41,10 +41,12 @@ export default function JornadaDetalle() {
     const urls = evid.length ? must(await sb.storage.from("evidencias").createSignedUrls(evid.map((e) => e.storage_path), 3600)) : [];
     const puntos = must(gps);
     const jj = must(j);
+    const empresaId = jj.campanias?.empresa_id;
+    const clientes = empresaId ? must(await sb.from("perfiles").select("id, nombre, correo, telefono, activo").eq("empresa_id", empresaId).eq("rol", "cliente").order("nombre")) : [];
     const nombresZonas = [...new Set([...jj.zonas, ...(jj.campanias?.zonas ?? [])])];
     const zonasMapa = nombresZonas.length ? must(await sb.from("zonas").select("nombre, contorno").in("nombre", nombresZonas)) : [];
     const mapa = { zonas: zonasMapa, todo: tramos(puntos), enZona: tramos(must(enZona)), punto: must(punto)[0] ?? null, cobertura: must(cob) };
-    return { mapa, pts: puntos, j: jj, ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, gps: { n: puntos.length, km: kmRecorrido(puntos) }, incid: must(incid), unidades: must(unidades), operadores: must(operadores) };
+    return { mapa, pts: puntos, j: jj, clientes, ev: evid.map((e, i) => ({ ...e, url: urls[i]?.signedUrl ?? null })), t: t.data, gps: { n: puntos.length, km: kmRecorrido(puntos) }, incid: must(incid), unidades: must(unidades), operadores: must(operadores) };
   }, [id]);
 
   const [p, setP] = useState({ fecha: "", hi: "", hf: "", unidad: "", operador: "", punto: "" });
@@ -239,6 +241,19 @@ export default function JornadaDetalle() {
           )}
         </Card>
       </div>
+
+      <Card title="Compartir acceso de monitoreo" actions={<Badge tone="gray">Requiere iniciar sesión</Badge>}>
+        <p className="mb-3 text-sm text-muted">Comparte el acceso al portal de esta empresa. Al generar una contraseña temporal, la contraseña anterior del usuario dejará de funcionar.</p>
+        {!data.clientes.length ? (
+          <Empty>Esta empresa todavía no tiene un usuario cliente activo. Crea su acceso desde Usuarios antes de compartir el monitoreo.</Empty>
+        ) : (
+          <div className="grid gap-4">
+            {data.clientes.map((cliente) => (
+              <AccesoCliente key={cliente.id} cliente={cliente} empresa={j.campanias?.empresas?.nombre ?? "tu campaña"} telefonoEmpresa={j.campanias?.empresas?.telefono ?? null} />
+            ))}
+          </div>
+        )}
+      </Card>
 
       {(mapa.zonas.length > 0 || mapa.todo.length > 0 || mapa.punto || enVivo) && (
         <Card title="Mapa" actions={<span className="text-xs text-muted">Verde: dentro de zonas (lo ve el cliente) · Gris: fuera de zonas (solo interno)</span>}>
