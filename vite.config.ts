@@ -11,5 +11,13 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: mode === "single" ? "dist-single" : "dist",
     assetsInlineLimit: mode === "single" ? 100_000_000 : 4096,
+    ...(mode === "single" ? {} : {
+      rollupOptions: {
+        input: {
+          main: fileURLToPath(new URL("./index.html", import.meta.url)),
+          publiEscuela: fileURLToPath(new URL("./publi-escuela.html", import.meta.url)),
+        },
+      },
+    }),
   },
 }));

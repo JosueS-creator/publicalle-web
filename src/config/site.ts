@@ -1,8 +1,11 @@
+/** Dominio canónico de producción. El dominio raíz redirige permanentemente a www en Vercel. */
+export const SITE_URL = "https://www.publicallehonduras.lat";
+
 export const site = {
-  url: (import.meta.env.VITE_SITE_URL as string | undefined) ?? "https://publicalle.com",
-  title: "Publicalle | Publicidad territorial medible en Honduras",
+  url: SITE_URL,
+  title: "Publicalle Honduras | Agencia de publicidad territorial y BTL",
   description:
-    "Publicidad territorial medible con cobertura en toda Honduras: vehículos con pantalla LED y perifoneo (Move), activaciones con carpas y animadores (Events), ubicaciones físicas (Place) y reportes con evidencia (Data).",
+    "Agencia de publicidad en Honduras: publicidad móvil con pantalla LED y perifoneo, activaciones BTL y espacios físicos para marcas. Planificación territorial y evidencia de ejecución.",
   locale: "es_HN",
   year: new Date().getFullYear(),
 } as const;
