@@ -18,13 +18,35 @@ import { reveal, stagger, viewportOnce } from "@/lib/motion";
  */
 export default function PubliEscuela() {
   useEffect(() => {
-    const prev = document.title;
-    document.title = "PubliEscuela · Un servicio de Publicalle";
+    document.title = "PubliEscuela | Publicidad móvil para escuelas en Honduras | Publicalle";
+    const description = "Atrae familias a tu centro educativo con una unidad móvil de pantalla LED y audio alrededor de tu escuela. Video incluido, recorrido planificado y monitoreo GPS en Honduras.";
+    document.querySelector('meta[name="description"]')?.setAttribute("content", description);
+    document.querySelector('meta[property="og:title"]')?.setAttribute("content", document.title);
+    document.querySelector('meta[property="og:description"]')?.setAttribute("content", description);
+    document.querySelector('meta[property="og:url"]')?.setAttribute("content", "https://www.publicallehonduras.lat/publi-escuela");
+    document.querySelector('meta[name="twitter:title"]')?.setAttribute("content", document.title);
+    document.querySelector('meta[name="twitter:description"]')?.setAttribute("content", description);
+
+    const structuredData = document.createElement("script");
+    structuredData.id = "publi-escuela-structured-data";
+    structuredData.type = "application/ld+json";
+    structuredData.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Service",
+      "name": "PubliEscuela — publicidad móvil para centros educativos",
+      "serviceType": "Publicidad móvil con pantalla LED y audio para escuelas",
+      "description": description,
+      "provider": { "@id": "https://www.publicallehonduras.lat/#organization" },
+      "areaServed": { "@type": "Country", "name": "Honduras" },
+      "url": "https://www.publicallehonduras.lat/publi-escuela"
+    });
+    document.head.appendChild(structuredData);
+
     // Enlace directo a una parte de la página (/publi-escuela#configurar)
     const id = decodeURIComponent(window.location.hash.slice(1));
     const t = id ? setTimeout(() => document.getElementById(id)?.scrollIntoView(), 80) : undefined;
     return () => {
-      document.title = prev;
+      structuredData.remove();
       if (t) clearTimeout(t);
     };
   }, []);

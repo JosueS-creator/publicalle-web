@@ -10,11 +10,24 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    },
+    {
+      "source": "/(admin|portal|operador|entrar|cotizacion)(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [
     {
-      "source": "/(admin|portal|operador|entrar|cotizacion|publi-escuela)(.*)",
+      "source": "/publi-escuela",
+      "destination": "/publi-escuela.html"
+    },
+    {
+      "source": "/(admin|portal|operador|entrar|cotizacion)(.*)",
       "destination": "/index.html"
     }
   ]
