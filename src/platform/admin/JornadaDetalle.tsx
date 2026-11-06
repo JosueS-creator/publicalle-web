@@ -397,3 +397,71 @@ export default function JornadaDetalle() {
     </Page>
   );
 }
+
+
+type ClienteAcceso = { id: string; nombre: string | null; correo: string | null; telefono: string | null; activo: boolean };
+
+function AccesoCliente({ cliente, empresa, telefonoEmpresa }: { cliente: ClienteAcceso; empresa: string; telefonoEmpresa: string | null }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [copiado, setCopiado] = useState(false);
+  const url = `${location.origin}/entrar`;
+  const correo = cliente.correo ?? "";
+  const telefono = (cliente.telefono || telefonoEmpresa || "").replace(/\\D/g, "");
+  const waPhone = telefono.length === 8 ? `504${telefono}` : telefono;
+  const mensaje = `Hola${cliente.nombre ? ` ${cliente.nombre}` : ""}. Te compartimos el acceso para monitorear tu campaña *${empresa}* en Publicalle.\\n\\nEnlace: ${url}\\nUsuario: ${correo}\\nContraseña temporal: ${password}\\n\\nDesde el portal podrás consultar el avance de tu campaña, las jornadas y las evidencias validadas.\\n\\nPublicalle — Publicidad territorial medible.`;
+  const whatsapp = `https://wa.me/${waPhone}?text=${encodeURIComponent(mensaje)}`;
+
+  const generar = async () => {
+    setBusy(true);
+    setError("");
+    setPassword("");
+    try {
+      const r = await adminUsuarios({ accion: "credenciales_temporales", id: cliente.id });
+      if (r.error) throw new Error(r.error);
+      if (!r.password) throw new Error("No se recibió la contraseña temporal.");
+      setPassword(r.password);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo generar el acceso.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const datos = `Acceso al portal de Publicalle\\n${url}\\nUsuario: ${correo}\\nContraseña temporal: ${password}\\nPor seguridad, cambia tu contraseña después de iniciar sesión.`;
+  return (
+    <div className="grid gap-3 rounded-xl bg-white/[0.03] p-4 ring-1 ring-inset ring-line">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="font-semibold">{cliente.nombre || "Cliente"}</p>
+          <p className="text-xs text-muted">{correo}</p>
+        </div>
+        {cliente.activo ? <Badge tone="green">Activo</Badge> : <Badge tone="red">Desactivado</Badge>}
+      </div>
+      <div className="grid gap-1 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-3">
+        <span className="text-muted">Enlace del portal</span><span className="break-all font-mono">{url}</span>
+        <span className="text-muted">Usuario</span><span className="break-all font-mono">{correo}</span>
+        {password && <><span className="text-muted">Nueva contraseña</span><span className="font-mono font-bold tracking-wide">{password}</span></>}
+      </div>
+      <p className="text-xs text-muted">Generar una nueva contraseña invalida la anterior. Solo se muestra en esta pantalla y no se almacena en el perfil.</p>
+      <ErrorBox msg={error} />
+      <div className="flex flex-wrap gap-2">
+        <Btn disabled={!cliente.activo || !correo} loading={busy} icon={<KeyRound className="size-4" aria-hidden />} onClick={generar}>
+          {password ? "Generar otra contraseña" : "Generar contraseña temporal"}
+        </Btn>
+        {password && (
+          <>
+            <Btn variant="secondary" icon={<Copy className="size-4" aria-hidden />} onClick={async () => {
+              try { await navigator.clipboard.writeText(datos); setCopiado(true); window.setTimeout(() => setCopiado(false), 1800); }
+              catch { setError("No se pudo copiar. Selecciona y copia los datos manualmente."); }
+            }}>{copiado ? "¡Copiado!" : "Copiar acceso"}</Btn>
+            <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#25D366] px-4 py-2 text-sm font-semibold text-[#062b18] hover:brightness-110">
+              <MessageCircle className="size-4" aria-hidden /> WhatsApp
+            </a>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
