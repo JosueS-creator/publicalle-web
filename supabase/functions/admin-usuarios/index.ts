@@ -77,6 +77,21 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    if (b.accion === "credenciales_temporales") {
+      const id = String(b.id ?? "");
+      const { data: objetivo } = await admin.from("perfiles").select("rol, activo").eq("id", id).maybeSingle();
+      if (!objetivo) return json({ error: "Usuario no encontrado." }, 404);
+      if (objetivo.rol !== "cliente") return json({ error: "Esta acción solo está disponible para usuarios cliente." }, 403);
+      if (!objetivo.activo) return json({ error: "El usuario está desactivado. Actívalo antes de generar acceso." }, 409);
+      const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+      const bytes = new Uint8Array(20);
+      crypto.getRandomValues(bytes);
+      const password = Array.from(bytes, (n) => alphabet[n % alphabet.length]).join("") + "a7!";
+      const { error } = await admin.auth.admin.updateUserById(id, { password });
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, password });
+    }
+
     if (b.accion === "editar") {
       // Datos del perfil de un operador. El correo también cambia en su acceso (login).
       const id = String(b.id ?? "");
