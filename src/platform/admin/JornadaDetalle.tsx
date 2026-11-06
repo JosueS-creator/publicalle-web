@@ -408,9 +408,9 @@ function AccesoCliente({ cliente, empresa, telefonoEmpresa }: { cliente: Cliente
   const [copiado, setCopiado] = useState(false);
   const url = `${location.origin}/entrar`;
   const correo = cliente.correo ?? "";
-  const telefono = (cliente.telefono || telefonoEmpresa || "").replace(/\\D/g, "");
+  const telefono = (cliente.telefono || telefonoEmpresa || "").replace(/\D/g, "");
   const waPhone = telefono.length === 8 ? `504${telefono}` : telefono;
-  const mensaje = `Hola${cliente.nombre ? ` ${cliente.nombre}` : ""}. Te compartimos el acceso para monitorear tu campaña *${empresa}* en Publicalle.\\n\\nEnlace: ${url}\\nUsuario: ${correo}\\nContraseña temporal: ${password}\\n\\nDesde el portal podrás consultar el avance de tu campaña, las jornadas y las evidencias validadas.\\n\\nPublicalle — Publicidad territorial medible.`;
+  const mensaje = `Hola${cliente.nombre ? ` ${cliente.nombre}` : ""}. Te compartimos el acceso para monitorear tu campaña *${empresa}* en Publicalle.\n\nEnlace: ${url}\nUsuario: ${correo}\nContraseña temporal: ${password}\n\nDesde el portal podrás consultar el avance de tu campaña, las jornadas y las evidencias validadas.\n\nPublicalle — Publicidad territorial medible.`;
   const whatsapp = `https://wa.me/${waPhone}?text=${encodeURIComponent(mensaje)}`;
 
   const generar = async () => {
@@ -429,7 +429,7 @@ function AccesoCliente({ cliente, empresa, telefonoEmpresa }: { cliente: Cliente
     }
   };
 
-  const datos = `Acceso al portal de Publicalle\\n${url}\\nUsuario: ${correo}\\nContraseña temporal: ${password}\\nPor seguridad, cambia tu contraseña después de iniciar sesión.`;
+  const datos = `Acceso al portal de Publicalle\n${url}\nUsuario: ${correo}\nContraseña temporal: ${password}\nPor seguridad, cambia tu contraseña después de iniciar sesión.`;
   return (
     <div className="grid gap-3 rounded-xl bg-white/[0.03] p-4 ring-1 ring-inset ring-line">
       <div className="flex flex-wrap items-center justify-between gap-2">
