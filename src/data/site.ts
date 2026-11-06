@@ -11,10 +11,10 @@ import promotores1400 from "@/assets/media/events/promotores/events-promotores-0
 export const brandMessage = "Llevamos tu marca al territorio, activamos espacios y documentamos cada campaña.";
 
 export const hero = {
-  eyebrow: "Publicidad territorial medible · Honduras",
+  eyebrow: "Agencia de publicidad · Honduras",
   /** La última palabra se resalta en turquesa. */
-  title: "Tu marca en movimiento.",
-  lead: "Publicidad que llega al territorio mediante vehículos, activaciones y espacios estratégicos, respaldada por evidencia y cobertura medible.",
+  title: "Publicidad en Honduras que mueve tu marca.",
+  lead: "Diseñamos y ejecutamos campañas de publicidad móvil con pantalla LED y perifoneo, activaciones BTL y presencia en espacios estratégicos, con cobertura territorial y evidencia de ejecución.",
   primaryCta: { label: "Crear una campaña", href: "#contacto" },
   secondaryCta: { label: "Explorar servicios", href: "#servicios" },
 };
@@ -22,7 +22,7 @@ export const hero = {
 export const servicesSection = {
   eyebrow: "Servicios",
   title: "Todo lo que tu campaña necesita.",
-  body: brandMessage,
+  body: "Soluciones de publicidad para empresas y marcas en Honduras: campañas móviles con pantalla LED y perifoneo, activaciones BTL, espacios físicos y seguimiento de la ejecución.",
 };
 
 /* ─────────────── MOVE ─────────────── */
