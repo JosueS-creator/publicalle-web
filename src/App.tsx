@@ -9,7 +9,7 @@ const PubliEscuela = lazy(() => import("@/pages/PubliEscuela"));
 const ServiceLanding = lazy(() => import("@/pages/ServiceLanding"));
 
 const SERVICE_PATHS = new Set(["/publicidad-en-honduras", "/publicidad-movil", "/pantallas-led", "/perifoneo", "/activaciones-btl"]);
-const esPaginaServicio = () => SERVICE_PATHS.has(window.location.pathname.replace(/\\/$/, "") || "/");
+const esPaginaServicio = () => SERVICE_PATHS.has(window.location.pathname.replace(/\/$/, "") || "/");
 
 /** Páginas de servicio dentro del mismo sitio (mismo header y footer). */
 export const esPubliEscuela = () => /^\/publi-escuela\/?$/.test(window.location.pathname);
