@@ -212,7 +212,7 @@ export default function ServiceLanding() {
         </div>
       </section>
 
-      <section className="container-pc mt-20 md:mt-28">
+      <section id="configurar" className="container-pc mt-20 md:mt-28">
         <div className="rounded-3xl border border-brand-green/20 bg-[radial-gradient(ellipse_at_top_right,rgba(34,201,180,0.13),transparent_55%),linear-gradient(135deg,rgba(21,96,200,0.15),rgba(10,19,38,0.8))] p-7 md:p-12">
           <p className="type-eyebrow text-brand-green">Hablemos de tu campaña</p>
           <h2 className="type-title mt-4 max-w-3xl text-3xl text-brand-white md:text-5xl">Cuéntanos qué quieres lograr y dónde.</h2>
