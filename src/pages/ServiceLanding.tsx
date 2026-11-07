@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, MapPin, MessageCircle } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin } from "lucide-react";
 import { WhatsAppButton } from "@/components/contact/WhatsAppButton";
 
 type Landing = {
