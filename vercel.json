@@ -22,6 +22,11 @@
     }
   ],
   "rewrites": [
+    { "source": "/publicidad-en-honduras", "destination": "/publicidad-en-honduras.html" },
+    { "source": "/publicidad-movil", "destination": "/publicidad-movil.html" },
+    { "source": "/pantallas-led", "destination": "/pantallas-led.html" },
+    { "source": "/perifoneo", "destination": "/perifoneo.html" },
+    { "source": "/activaciones-btl", "destination": "/activaciones-btl.html" },
     {
       "source": "/publi-escuela",
       "destination": "/publi-escuela.html"

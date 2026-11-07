@@ -12,6 +12,11 @@ import { hrefSitio } from "@/config/navigation";
 
 const footerLinks = [
   ...serviceLines.map((l) => ({ label: `Publicalle ${l.name[0]}${l.name.slice(1).toLowerCase()}`, href: l.href })),
+  { label: "Publicidad móvil", href: "/publicidad-movil" },
+  { label: "Pantallas LED", href: "/pantallas-led" },
+  { label: "Perifoneo", href: "/perifoneo" },
+  { label: "Activaciones BTL", href: "/activaciones-btl" },
+  { label: "Publicidad en Honduras", href: "/publicidad-en-honduras" },
   { label: "PubliEscuela", href: "/publi-escuela" },
   { label: "Campañas combinadas", href: "#campanas-combinadas" },
   { label: "Cobertura", href: "#cobertura" },

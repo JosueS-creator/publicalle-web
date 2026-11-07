@@ -16,6 +16,11 @@ export default defineConfig(({ mode }) => ({
         input: {
           main: fileURLToPath(new URL("./index.html", import.meta.url)),
           publiEscuela: fileURLToPath(new URL("./publi-escuela.html", import.meta.url)),
+          publicidadEnHonduras: fileURLToPath(new URL("./publicidad-en-honduras.html", import.meta.url)),
+          publicidadMovil: fileURLToPath(new URL("./publicidad-movil.html", import.meta.url)),
+          pantallasLed: fileURLToPath(new URL("./pantallas-led.html", import.meta.url)),
+          perifoneo: fileURLToPath(new URL("./perifoneo.html", import.meta.url)),
+          activacionesBtl: fileURLToPath(new URL("./activaciones-btl.html", import.meta.url)),
         },
       },
     }),
