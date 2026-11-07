@@ -6,6 +6,10 @@ import { Hero } from "@/sections/Hero";
 
 const BelowTheFold = lazy(() => import("@/sections/BelowTheFold"));
 const PubliEscuela = lazy(() => import("@/pages/PubliEscuela"));
+const ServiceLanding = lazy(() => import("@/pages/ServiceLanding"));
+
+const SERVICE_PATHS = new Set(["/publicidad-en-honduras", "/publicidad-movil", "/pantallas-led", "/perifoneo", "/activaciones-btl"]);
+const esPaginaServicio = () => SERVICE_PATHS.has(window.location.pathname.replace(/\\/$/, "") || "/");
 
 /** Páginas de servicio dentro del mismo sitio (mismo header y footer). */
 export const esPubliEscuela = () => /^\/publi-escuela\/?$/.test(window.location.pathname);
@@ -13,6 +17,7 @@ export const esPubliEscuela = () => /^\/publi-escuela\/?$/.test(window.location.
 /** Narrativa: MARCA → VEHÍCULO → CALLE → RUTA → COBERTURA → DATOS → RESULTADO */
 export default function App() {
   if (esPubliEscuela()) return <Sitio><Suspense fallback={<div className="min-h-screen" aria-hidden />}><PubliEscuela /></Suspense></Sitio>;
+  if (esPaginaServicio()) return <Sitio><Suspense fallback={<div className="min-h-screen" aria-hidden />}><ServiceLanding /></Suspense></Sitio>;
   return <Inicio />;
 }
 
