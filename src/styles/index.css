@@ -408,3 +408,21 @@ html body {
 .leaflet-container .leaflet-control-attribution.leaflet-control-attribution { background: rgb(5 10 23 / 0.75); color: #8d97ad; }
 .leaflet-container .leaflet-control-attribution a { color: #c8d0e0; }
 .pc-mapa-oscuro { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6); }
+
+
+@keyframes service-gallery-drift {
+  0%, 100% { transform: scale(1.015) translateY(0); }
+  50% { transform: scale(1.035) translateY(-5px); }
+}
+
+.service-gallery-float {
+  animation: service-gallery-drift 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-gallery-float {
+    animation: none;
+    transform: none;
+  }
+}

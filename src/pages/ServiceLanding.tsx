@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, MapPin } from "lucide-react";
+import { ServicePhotoCarousel, type GalleryImage } from "@/components/gallery/ServicePhotoCarousel";
 import { WhatsAppButton } from "@/components/contact/WhatsAppButton";
 
 type Landing = {
@@ -12,6 +13,7 @@ type Landing = {
   related: { label: string; href: string; detail: string }[];
   whatsapp: string;
   accent: string;
+  gallery: { title: string; images: GalleryImage[] };
 };
 
 const pages: Record<string, Landing> = {
@@ -39,6 +41,16 @@ const pages: Record<string, Landing> = {
       { label: "Activaciones BTL", href: "/activaciones-btl", detail: "Conecta cara a cara con tu público." },
     ],
     whatsapp: "Hola Publicalle, quiero cotizar una campaña de publicidad en Honduras.",
+      gallery: {
+      title: "Publicalle en acción",
+      images: [
+        { src: "/images/servicios/Carpa1.jpg", alt: "Carpa de activación promocional" },
+        { src: "/images/servicios/PPM1.jpg", alt: "Unidad y formato de publicidad móvil" },
+        { src: "/images/servicios/Perifoneo1.jpg", alt: "Servicio de perifoneo móvil" },
+        { src: "/images/servicios/Promotora1.jpg", alt: "Promotora en actividad de marca" },
+        { src: "/images/servicios/volanteo1.jpg", alt: "Actividad de volanteo promocional" },
+      ],
+    },
     accent: "Una campaña. Diferentes formas de llegar a tu público.",
   },
   "/publicidad-movil": {
@@ -64,6 +76,16 @@ const pages: Record<string, Landing> = {
       { label: "Activaciones BTL", href: "/activaciones-btl", detail: "Combina el recorrido con experiencias presenciales." },
     ],
     whatsapp: "Hola Publicalle, quiero cotizar publicidad móvil para mi marca.",
+      gallery: {
+      title: "Publicidad móvil en movimiento",
+      images: [
+        { src: "/images/servicios/PPM1.jpg", alt: "Publicidad móvil Publicalle" },
+        { src: "/images/servicios/PPM2.jpg", alt: "Unidad de publicidad móvil en campaña" },
+        { src: "/images/servicios/PPM3.jpg", alt: "Ejecución de publicidad móvil" },
+        { src: "/images/servicios/megavalla - Copy.jpg", alt: "Formato de publicidad exterior móvil" },
+        { src: "/images/servicios/IMG_20261007_090650484_HDR.jpg", alt: "Registro fotográfico de campaña Publicalle" },
+      ],
+    },
     accent: "Tu marca recorriendo la ciudad.",
   },
   "/pantallas-led": {
@@ -89,6 +111,15 @@ const pages: Record<string, Landing> = {
       { label: "Publicidad en Honduras", href: "/publicidad-en-honduras", detail: "Explora todas las soluciones de Publicalle." },
     ],
     whatsapp: "Hola Publicalle, quiero cotizar una campaña con pantalla LED móvil.",
+      gallery: {
+      title: "Pantallas LED en campaña",
+      images: [
+        { src: "/images/servicios/PPM1.jpg", alt: "Pantalla y formato audiovisual móvil" },
+        { src: "/images/servicios/PPM2.jpg", alt: "Publicidad móvil con contenido visual" },
+        { src: "/images/servicios/PPM3.jpg", alt: "Ejecución de campaña audiovisual" },
+        { src: "/images/servicios/megavalla - Copy.jpg", alt: "Publicidad exterior en gran formato" },
+      ],
+    },
     accent: "Tu mensaje en movimiento y a la vista.",
   },
   "/perifoneo": {
@@ -114,6 +145,16 @@ const pages: Record<string, Landing> = {
       { label: "Activaciones BTL", href: "/activaciones-btl", detail: "Integra experiencias presenciales a tu campaña." },
     ],
     whatsapp: "Hola Publicalle, quiero cotizar un servicio de perifoneo.",
+      gallery: {
+      title: "Perifoneo y comunicación en movimiento",
+      images: [
+        { src: "/images/servicios/Perifoneo1.jpg", alt: "Equipo de perifoneo Publicalle" },
+        { src: "/images/servicios/perifoneo2.jpg", alt: "Unidad de perifoneo en operación" },
+        { src: "/images/servicios/perifoneo3.jpg", alt: "Campaña de perifoneo móvil" },
+        { src: "/images/servicios/Perifoneo4.jpg", alt: "Servicio de audio móvil" },
+        { src: "/images/servicios/perifoneo5.jpg", alt: "Actividad de perifoneo" },
+      ],
+    },
     accent: "Haz que tu mensaje se escuche en tu zona.",
   },
   "/activaciones-btl": {
@@ -139,6 +180,21 @@ const pages: Record<string, Landing> = {
       { label: "Perifoneo", href: "/perifoneo", detail: "Amplía la comunicación de tu activación." },
     ],
     whatsapp: "Hola Publicalle, quiero cotizar una activación BTL.",
+      gallery: {
+      title: "Activaciones y experiencias reales",
+      images: [
+        { src: "/images/servicios/Carpa1.jpg", alt: "Carpa promocional para activación de marca" },
+        { src: "/images/servicios/Edecan1.jpg", alt: "Edecan en actividad promocional" },
+        { src: "/images/servicios/edecan2.jpg", alt: "Personal de apoyo en activación" },
+        { src: "/images/servicios/Promotora1.jpg", alt: "Promotora en campaña" },
+        { src: "/images/servicios/Promotora2.jpg", alt: "Promoción e interacción con público" },
+        { src: "/images/servicios/eventos1.jpg", alt: "Montaje de evento promocional" },
+        { src: "/images/servicios/eventos2.jpg", alt: "Actividad de evento y marca" },
+        { src: "/images/servicios/eventos3.jpg", alt: "Experiencia promocional presencial" },
+        { src: "/images/servicios/eventos4.jpg", alt: "Producción de evento" },
+        { src: "/images/servicios/volanteo1.jpg", alt: "Volanteo promocional" },
+      ],
+    },
     accent: "Convierte tu campaña en una experiencia.",
   },
 };
@@ -162,6 +218,10 @@ export default function ServiceLanding() {
           </div>
           <p className="mt-8 type-data text-xs tracking-wide text-muted">PUBLICALLE HONDURAS · COBERTURA NACIONAL</p>
         </div>
+      </section>
+
+      <section aria-label="Galería fotográfica del servicio" className="container-pc mt-16 md:mt-20">
+        <ServicePhotoCarousel title={page.gallery.title} images={page.gallery.images} />
       </section>
 
       <section id="servicio" className="container-pc mt-20 grid gap-10 border-t border-line pt-12 md:mt-28 md:grid-cols-12 md:pt-16">
